@@ -1281,7 +1281,7 @@ window.CCL_READER_URL = "";
     if (!window.__localDb || !/^https?:$/.test(location.protocol) || !state.db) return;
     try {
       var r = await fetch("protocols/protocols.json", { cache: "no-cache" }); if (!r.ok) return;
-      var j = await r.json(), list = Array.isArray(j && j.protocols) ? j.protocols : [], ids = [], n = 0;
+      var j = await r.json(), list = Array.isArray(j && j.protocols) ? j.protocols : [], ids = [], n = 0, setUp = {};
       for (var i = 0; i < list.length; i++) {
         var p = list[i] || {}, id = "site-" + (slug(p.id || p.title) || "protocol-" + i), stamp = JSON.stringify(p), cur = state.protocols.filter(function (x) { return x.id === id; })[0];
         ids.push(id);
@@ -1295,10 +1295,25 @@ window.CCL_READER_URL = "";
           source: "site", siteStamp: stamp, createdAt: cur && cur.createdAt ? cur.createdAt : Date.now(), updatedAt: isNaN(up) ? Date.now() : up
         });
         n++;
+        if (String(p.line || "").trim()) { var lk = String(p.line).trim(); (setUp[lk] = setUp[lk] || []).push(p); }
+      }
+      // New or changed site protocols add their cell line if it is missing and fill its defaults. The Passage protocol's values become the usual defaults; every protocol's values also go under its own action.
+      var made = [];
+      for (var ln in setUp) {
+        var flat = {}, by = {}, ps = setUp[ln].slice().sort(function (a, b) { return (a.purpose === "Passage") - (b.purpose === "Passage"); });
+        ps.forEach(function (q) {
+          var d = {}, dv = q.defaults || {};
+          Object.keys(dv).forEach(function (k) { if (T.indexOf(k) >= 0 || k === "flasks") d[k] = DEFNUM[k] && num(dv[k]) != null ? num(dv[k]) : dv[k]; });
+          if (!Object.keys(d).length) return;
+          var act = PURPOSES.indexOf(q.purpose) >= 0 ? q.purpose : "Other", bd = Object.assign({}, d); delete bd.flasks;
+          if (Object.keys(bd).length) by[act] = Object.assign(by[act] || {}, bd);
+          Object.assign(flat, d);
+        });
+        var res = await ensureLine(ln, flat, by); if (res && res.created) made.push(res.name);
       }
       var gone = state.protocols.filter(function (x) { return x.source === "site" && ids.indexOf(x.id) < 0; });
       for (var k = 0; k < gone.length; k++) await state.db.doc("protocols/" + gone[k].id).delete();
-      if (n || gone.length) setStatus("Lab protocols updated from the site.");
+      if (n || gone.length) setStatus("Lab protocols updated from the site." + (made.length ? " Added cell line" + (made.length > 1 ? "s " : " ") + made.join(", ") + " with defaults from " + (made.length > 1 ? "their" : "its") + " protocols." : ""));
     } catch (e) {}
   }
   function fillLineList() { var dl = $("pLineList"); if (dl) dl.innerHTML = state.lines.map(function (l) { return '<option value="' + esc(l.name) + '">'; }).join(""); }
@@ -1588,7 +1603,7 @@ window.CCL_READER_URL = "";
     Object.keys(by || {}).forEach(function (a) { nb[a] = Object.assign({}, nb[a] || {}, by[a]); n += Object.keys(by[a]).filter(function (k) { return !(k in add); }).length; });
     if (Object.keys(nb).length) cur.template.byAction = nb; else delete cur.template.byAction;
     state.pLineMade[key] = cur;
-    if (created) await state.db.doc("lines/" + cur.id).set({ name: name, order: Date.now(), template: cur.template });
+    if (created) await state.db.doc("lines/" + cur.id).set({ name: name, order: Date.now() + (state.lineSeq = (state.lineSeq || 0) + 1), template: cur.template });
     else if (n) await state.db.doc("lines/" + cur.id).update({ template: cur.template });
     if (n && state.tplFor === cur.name) state.tplFor = null;
     return { name: cur.name, created: created, filled: n };
@@ -2743,7 +2758,7 @@ window.CCL_READER_URL = "";
     setStatus("Loading...");
     var slow = setTimeout(function () { setStatus("Cannot reach saved data yet."); }, 10000);
     var ready = {};
-    function done(k) { ready[k] = 1; if (ready.lines && ready.entries && ready.media && ready.experiments && ready.actions && ready.protocols) { clearTimeout(slow); setStatus(""); } }
+    function done(k) { ready[k] = 1; if (ready.lines && ready.entries && ready.media && ready.experiments && ready.actions && ready.protocols) { clearTimeout(slow); setStatus(""); } if (ready.lines && ready.protocols && !state.siteChecked) { state.siteChecked = true; loadSiteProtocols(); } }
     var onErr = function () { clearTimeout(slow); setStatus("Saved data could not be loaded."); };
     state.db.collection("lines").onSnapshot(function (s) {
       state.lines = s.docs.map(function (d) { var o = d.data(); return o ? Object.assign({}, o, { _id: d.id }) : o; }).filter(function (l) { return l && l.name; }).sort(function (a, b) { return (a.order || 0) - (b.order || 0); });
@@ -2775,7 +2790,6 @@ window.CCL_READER_URL = "";
     state.db.collection("protocols").onSnapshot(function (s) {
       state.protocols = s.docs.map(function (d) { return Object.assign({}, d.data(), { id: d.id }); });
       renderProtocolOptions(); if (state.tab === PROTO) renderProtocols(); done("protocols");
-      if (!state.siteChecked) { state.siteChecked = true; loadSiteProtocols(); }
     }, onErr);
     state.db.collection("settings").onSnapshot(function (s) {
       var f = null; s.docs.forEach(function (d) { if (d.id === "flasks") f = d.data(); });

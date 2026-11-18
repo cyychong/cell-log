@@ -1,5 +1,304 @@
 {
   "about": "Lab protocols shown on the cell culture log web page. Claude Code writes this file from the protocol files in this folder.",
   "updated": "2026-11-18",
-  "protocols": []
+  "protocols": [
+    {
+      "id": "hTERT-RPE1_media",
+      "title": "Complete culture medium",
+      "purpose": "Media prep",
+      "line": "hTERT-RPE1",
+      "version": "20260607",
+      "updated": "2026-11-18",
+      "files": [
+        "hTERT-RPE1_protocol_lab-notes.pdf"
+      ],
+      "steps": [
+        "DMEM-F12 (ATCC #30-2006).",
+        "Add FBS to a final concentration of 10%.",
+        "Add hygromycin B to 0.01 mg/mL (to maintain stable clones)."
+      ],
+      "defaults": {
+        "media": "DMEM-F12 (ATCC #30-2006) + 10% FBS + 0.01 mg/mL hygromycin B"
+      },
+      "source_note": "From the 4D Nucleosome consortium (adapted from ATCC)."
+    },
+    {
+      "id": "hTERT-RPE1_thaw",
+      "title": "Thawing cells",
+      "purpose": "Thaw",
+      "line": "hTERT-RPE1",
+      "version": "20260607",
+      "updated": "2026-11-18",
+      "files": [
+        "hTERT-RPE1_protocol_lab-notes.pdf"
+      ],
+      "steps": [
+        "Frozen vials are stored in the vapour phase of the LN2 dewar.",
+        "Prepare a T75 flask with 12 mL complete medium. Put it in the incubator for at least 15 min so the medium reaches pH 7.0–7.6.",
+        "Thaw the vial in a 37°C water bath with gentle swirling, keeping the O-ring and cap out of the water. Thawing should take about 2–2.5 min.",
+        "Take the vial out as soon as it is thawed. Spray it with 70% ethanol and bring it into the TC hood.",
+        "Transfer the vial contents to a centrifuge tube with 9.0 mL complete medium. Centrifuge for 5 min (the centrifuge has no rpm or rcf setting).",
+        "Discard the supernatant and resuspend the cells in 1 mL fresh medium. Add this to the T75 flask.",
+        "Incubate at 37°C, 5% CO2."
+      ],
+      "defaults": {
+        "thawMediaVol": 9,
+        "cenTime": 5,
+        "media": "DMEM-F12 (ATCC #30-2006) + 10% FBS + 0.01 mg/mL hygromycin B",
+        "flasks": [
+          {
+            "n": 1,
+            "type": "T75"
+          }
+        ]
+      },
+      "source_note": "From the 4D Nucleosome consortium (adapted from ATCC)."
+    },
+    {
+      "id": "hTERT-RPE1_passage",
+      "title": "Passaging cells",
+      "purpose": "Passage",
+      "line": "hTERT-RPE1",
+      "version": "20260607",
+      "updated": "2026-11-18",
+      "files": [
+        "hTERT-RPE1_protocol_lab-notes.pdf"
+      ],
+      "steps": [
+        "Volumes are for a T75 flask; scale the dissociation volumes for other vessels.",
+        "Remove and discard the culture medium.",
+        "Briefly rinse the cell layer with 5 mL 0.05% (w/v) Trypsin – 0.53 mM EDTA to remove serum (it contains trypsin inhibitor).",
+        "Add 4 mL Trypsin-EDTA and incubate at 37°C for 5 min.",
+        "Tap the flask to reduce clumping if needed.",
+        "Add 6 mL complete medium and collect the cells by gently pipetting.",
+        "Resuspend in an appropriate volume of complete medium and count the cells.",
+        "Seed 4,000–6,000 viable cells/cm². For a T75 we seed 300,000–400,000 cells.",
+        "Incubate at 37°C, 5% CO2."
+      ],
+      "seeding": {
+        "min": 4000,
+        "max": 6000,
+        "note": "An inoculum of 4 x 10^3 to 6 x 10^3 viable cells/cm2 is recommended. For T75 flasks, we inoculate between 300,000 to 400,000 cells."
+      },
+      "defaults": {
+        "rinse": "0.05% (w/v) Trypsin - 0.53 mM EDTA",
+        "dissType": "Trypsin-EDTA",
+        "dissConc": "0.05%",
+        "dissVol": 4,
+        "dissTemp": 37,
+        "dissTime": 5,
+        "media": "DMEM-F12 (ATCC #30-2006) + 10% FBS + 0.01 mg/mL hygromycin B",
+        "flasks": [
+          {
+            "n": 1,
+            "type": "T75"
+          }
+        ]
+      },
+      "source_note": "From the 4D Nucleosome consortium (adapted from ATCC)."
+    },
+    {
+      "id": "hTERT-RPE1_media-change",
+      "title": "Change media",
+      "purpose": "Change media",
+      "line": "hTERT-RPE1",
+      "version": "20260607",
+      "updated": "2026-11-18",
+      "files": [
+        "hTERT-RPE1_protocol_lab-notes.pdf"
+      ],
+      "steps": [
+        "Change the medium every 2 days (or as needed).",
+        "Use 12 mL for a T75 and 5 mL for a T25."
+      ],
+      "defaults": {
+        "media": "DMEM-F12 (ATCC #30-2006) + 10% FBS + 0.01 mg/mL hygromycin B"
+      },
+      "source_note": "From the 4D Nucleosome consortium (adapted from ATCC)."
+    },
+    {
+      "id": "JM8.N4_media",
+      "title": "LIF stock and JM8.N4 medium",
+      "purpose": "Media prep",
+      "line": "JM8.N4",
+      "version": "4DN SOP Jul 2017",
+      "updated": "2026-11-18",
+      "files": [
+        "JM8_N4_mESC-Culture.docx"
+      ],
+      "steps": [
+        "LIF stock: spin the lyophilized LIF vial briefly. Add sterile 0.1% BSA in water to 0.1 mg/mL (10^7 U/mL).",
+        "Dilute 1:10 in medium to make a 10^6 U/mL working stock. Aliquot into single-use tubes (e.g. 600 µL). Store at −20°C; use within 3 months.",
+        "Medium (~600 mL): to 500 mL KnockOut DMEM add 90 mL FBS (not heat-inactivated, 15%), 6 mL GlutaMAX (2 mM), 6 mL MEM NEAA (1X), 6 mL Pen/Strep (1X), 600 µL LIF (1000 U/mL) and 4.6 µL 2-mercaptoethanol (0.1 mM; a 1:10 dilution stock is easier to pipette).",
+        "Filter the whole bottle through a 0.2 µm filter unit.",
+        "Label \"JM8.N4 medium\", date and initials. Store at 4°C in the dark; use within ~2 weeks. Aliquots keep at −20°C for up to 3 months.",
+        "Each day, warm only the volume you need.",
+        "0.25% trypsin (1X): aliquot and freeze at −20°C."
+      ],
+      "defaults": {
+        "media": "JM8.N4 medium: KnockOut DMEM + 15% FBS + 2 mM GlutaMAX + 1X NEAA + 1X Pen/Strep + 1000 U/mL LIF + 0.1 mM 2-ME"
+      },
+      "source_note": "LIF/serum, feeder-free; adapted from the 4DN SOP (revised July 2017)."
+    },
+    {
+      "id": "JM8.N4_gelatin",
+      "title": "Gelatin coating",
+      "purpose": "Coating",
+      "line": "JM8.N4",
+      "version": "4DN SOP Jul 2017",
+      "updated": "2026-11-18",
+      "files": [
+        "JM8_N4_mESC-Culture.docx"
+      ],
+      "steps": [
+        "Cells do not attach well without gelatin. Coat at least 30 min before use.",
+        "Add 0.1% gelatin: 1.5 mL per well of a 6-well plate, about 5 mL for a 10 cm dish, 3 mL for a T25.",
+        "Put in the 37°C incubator for ~30 min to 3 h.",
+        "Just before adding cells, aspirate the gelatin and add pre-warmed medium.",
+        "Coated plates (gelatin left on) can be kept at 37°C and used within 7 days."
+      ],
+      "defaults": {
+        "coating": "0.1% gelatin"
+      },
+      "source_note": "LIF/serum, feeder-free; adapted from the 4DN SOP (revised July 2017)."
+    },
+    {
+      "id": "JM8.N4_thaw",
+      "title": "Cells from a frozen vial (Day 0)",
+      "purpose": "Thaw",
+      "line": "JM8.N4",
+      "version": "4DN SOP Jul 2017",
+      "updated": "2026-11-18",
+      "files": [
+        "JM8_N4_mESC-Culture.docx"
+      ],
+      "steps": [
+        "Freezing medium contains DMSO, which harms warm cells. Get the cells out of it within 5 min.",
+        "Ready first: a gelatin-coated 6-well plate in the incubator, medium warmed to 37°C, a 15 mL tube with 9 mL warm medium in the hood, centrifuge set to 1,000 rpm, 5 min.",
+        "Take the vial from liquid nitrogen. Swirl gently in the 37°C water bath for ~1–2 min until only a tiny ice crystal is left.",
+        "Spray the vial with 70% ethanol, wipe it, and put it in the hood.",
+        "With a 1 mL pipette, add the cells drop by drop into the 9 mL warm medium. Rinse the vial with 1 mL medium from the tube.",
+        "Centrifuge at 1,000 rpm for 5 min.",
+        "Aspirate the liquid carefully without touching the small white pellet.",
+        "Add 2 mL warm medium and pipette up and down 3–5 times.",
+        "Aspirate the gelatin from one well and add the 2 mL of cells. Rock the plate forward-back and left-right to spread the cells; do not swirl.",
+        "Label the plate: cell line, date, initials and passage number.",
+        "Put the plate in the 37°C, 5% CO2 humidified incubator.",
+        "Next day: check for small attached colonies (some floating dead cells are normal). Replace all the medium with 2 mL fresh warm medium.",
+        "Days 2–3: change the medium every day. Split when the well is 70–80% covered with colonies."
+      ],
+      "defaults": {
+        "thawMediaVol": 9,
+        "cenSpeed": "1,000 rpm",
+        "cenTime": 5,
+        "coating": "0.1% gelatin",
+        "media": "JM8.N4 medium: KnockOut DMEM + 15% FBS + 2 mM GlutaMAX + 1X NEAA + 1X Pen/Strep + 1000 U/mL LIF + 0.1 mM 2-ME",
+        "flasks": [
+          {
+            "n": 1,
+            "type": "6-well"
+          }
+        ]
+      },
+      "source_note": "LIF/serum, feeder-free; adapted from the 4DN SOP (revised July 2017)."
+    },
+    {
+      "id": "JM8.N4_daily",
+      "title": "Daily care",
+      "purpose": "Change media",
+      "line": "JM8.N4",
+      "version": "4DN SOP Jul 2017",
+      "updated": "2026-11-18",
+      "files": [
+        "JM8_N4_mESC-Culture.docx"
+      ],
+      "steps": [
+        "Check the cells under the microscope every day. Healthy colonies are round, tightly packed and shiny, with smooth, bright edges.",
+        "Change the medium every day (2 mL per well of a 6-well plate). Aspirate from the side of the well, then add fresh warm medium gently down the side.",
+        "Split at 70–80% confluence. Do not let colonies touch and merge; overgrown ES cells start to differentiate."
+      ],
+      "defaults": {
+        "media": "JM8.N4 medium: KnockOut DMEM + 15% FBS + 2 mM GlutaMAX + 1X NEAA + 1X Pen/Strep + 1000 U/mL LIF + 0.1 mM 2-ME"
+      },
+      "source_note": "LIF/serum, feeder-free; adapted from the 4DN SOP (revised July 2017)."
+    },
+    {
+      "id": "JM8.N4_passage",
+      "title": "Splitting cells (one well of a 6-well plate)",
+      "purpose": "Passage",
+      "line": "JM8.N4",
+      "version": "4DN SOP Jul 2017",
+      "updated": "2026-11-18",
+      "files": [
+        "JM8_N4_mESC-Culture.docx"
+      ],
+      "steps": [
+        "Ready first: new gelatin-coated wells, warm medium, warm DPBS, 0.25% trypsin (room temperature or 37°C).",
+        "Aspirate the medium from the well.",
+        "Wash once with 2 mL DPBS. Aspirate.",
+        "Add 0.5 mL 0.25% trypsin to cover the cells.",
+        "Incubate at 37°C for 1–2 min. Check that the cells are rounded and lifting; tap gently if needed. Do not leave trypsin longer than needed.",
+        "Add at least 1 mL medium (2× the trypsin volume) to stop the trypsin.",
+        "Pipette up and down 7–10 times, gently, to break the colonies. Avoid bubbles.",
+        "Transfer to a 15 mL tube and centrifuge at 1,000 rpm for 5 min.",
+        "Aspirate the liquid and resuspend the pellet in fresh medium.",
+        "Plate into new gelatin-coated wells (gelatin aspirated first): 3.5 x 10^5 cells per well of a 6-well plate in 2 mL, or split 1:6 by ratio.",
+        "Rock the plate to spread the cells. Label with the new passage number (+1), date and initials. Return to the incubator.",
+        "Scale-up by vessel (gelatin / medium / trypsin): 6-well well 1.5 / 2 / 0.5 mL; T25 3 / 5 / 1 mL; 10 cm dish 5 / 10 / 2 mL."
+      ],
+      "seeding": {
+        "min": 36842.1053,
+        "max": 36842.1053,
+        "note": "3.5 x 10^5 cells per well of a 6-well plate (9.5 cm2), which is about 36,842 cells/cm2. Or split 1:6 by ratio."
+      },
+      "defaults": {
+        "rinse": "2 mL DPBS",
+        "dissType": "Trypsin",
+        "dissConc": "0.25%",
+        "dissVol": 0.5,
+        "dissTemp": 37,
+        "dissTime": 2,
+        "cenSpeed": "1,000 rpm",
+        "cenTime": 5,
+        "coating": "0.1% gelatin",
+        "media": "JM8.N4 medium: KnockOut DMEM + 15% FBS + 2 mM GlutaMAX + 1X NEAA + 1X Pen/Strep + 1000 U/mL LIF + 0.1 mM 2-ME",
+        "flasks": [
+          {
+            "n": 1,
+            "type": "6-well"
+          }
+        ]
+      },
+      "source_note": "LIF/serum, feeder-free; adapted from the 4DN SOP (revised July 2017)."
+    },
+    {
+      "id": "JM8.N4_freeze",
+      "title": "Freezing new vials",
+      "purpose": "Freeze",
+      "line": "JM8.N4",
+      "version": "4DN SOP Jul 2017",
+      "updated": "2026-11-18",
+      "files": [
+        "JM8_N4_mESC-Culture.docx"
+      ],
+      "steps": [
+        "Freeze only healthy, fast-growing cells at 70–80% confluence. Aim for about 2 million cells per vial (one confluent 6-well well per vial).",
+        "Ready first: cryovials labelled \"JM8.N4\", passage number, date, cells per vial and initials; Mr. Frosty at room temperature with fresh isopropanol (change every 5 uses); HyCryo-Stem 2X kept cold; warm medium, DPBS and trypsin.",
+        "Detach the cells as for splitting (DPBS wash → trypsin 1–2 min → stop with medium → pipette to single cells → 15 mL tube). Pool all wells to freeze.",
+        "Count the cells and work out how many vials you can make.",
+        "Centrifuge at 1,000 rpm for 5 min.",
+        "Aspirate. Resuspend the pellet in 0.5 mL cold medium per vial (e.g. 5 vials → 2.5 mL).",
+        "Add an equal volume of HyCryo-Stem 2X and mix gently (this makes 1X freezing medium).",
+        "Quickly add 1 mL to each cryovial and put the vials straight into the Mr. Frosty.",
+        "Put the container at −80°C overnight (~24 h).",
+        "Next day, move the vials to liquid nitrogen. Do not leave them at −80°C for more than 72 h."
+      ],
+      "defaults": {
+        "freezeMedia": "HyCryo-Stem 2X mixed 1:1 with cold JM8.N4 medium (1X)",
+        "cenSpeed": "1,000 rpm",
+        "cenTime": 5
+      },
+      "source_note": "LIF/serum, feeder-free; adapted from the 4DN SOP (revised July 2017)."
+    }
+  ]
 }
