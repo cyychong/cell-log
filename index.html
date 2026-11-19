@@ -562,7 +562,7 @@ window.CCL_READER_URL = "";
   .pcard { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; margin-bottom: 10px; background: var(--bg); }
   .pcardHead { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
   .pcardHead b { font-size: 14px; } .pcardHead .sub { flex: 1; }
-  .pgroup { font-size: 15px; margin: 18px 0 8px; display: flex; gap: 8px; align-items: baseline; } .pgroup:first-child { margin-top: 0; }
+  .pgroup { font-size: 15px; font-weight: 600; margin: 0; padding: 10px 2px; display: flex; gap: 8px; align-items: baseline; cursor: pointer; list-style: none; } .pgroup::-webkit-details-marker { display: none; } .pgroup::before { content: "\25B8"; display: inline-block; width: 12px; transition: transform .15s; } .pgrp[open] > .pgroup::before { transform: rotate(90deg); } .pgrp { border-bottom: 1px solid var(--line, rgba(127,127,127,.25)); } .pgrp[open] { padding-bottom: 10px; }
   .calc.pre { border-left: 3px solid #e0a100; }
   .calc.pre .rem { font-weight: 600; color: #b26a00; margin-bottom: 4px; }
   @media (prefers-color-scheme: dark) { .calc.pre .rem { color: #ffb74d; } }
@@ -1327,12 +1327,12 @@ window.CCL_READER_URL = "";
     $("pCount").textContent = ps.length + (ps.length === 1 ? " protocol" : " protocols") + (keys.length > 1 ? ", grouped by cell line" : "");
     $("pList").innerHTML = ps.length ? keys.map(function (k) {
       var g = groups[k].sort(protoSort);
-      return '<h3 class="pgroup">' + esc(k || "All cell lines") + '<span class="sub">' + g.length + (g.length === 1 ? " protocol" : " protocols") + "</span></h3>" + g.map(function (p) {
+      return '<details class="pgrp" data-pgrp="' + esc(k) + '"' + ((state.pOpen || {})[k] ? " open" : "") + '><summary class="pgroup">' + esc(k || "All cell lines") + '<span class="sub">' + g.length + (g.length === 1 ? " protocol" : " protocols") + "</span></summary>" + g.map(function (p) {
         var n = String(p.steps || "").split(/\r?\n/).filter(function (x) { return x.trim(); }).length;
         return '<div class="pcard"><div class="pcardHead"><b>' + esc(p.title) + '</b><span class="sub">' + esc([p.purpose, p.version, "updated " + ymd(p.updatedAt || p.createdAt), p.source === "site" ? "from the lab site" : ""].filter(Boolean).join(" · ")) + '</span><span><button class="small" data-pedit="' + esc(p.id) + '">Edit</button> <button class="small" data-ppdf="' + esc(p.id) + '">PDF</button> <button class="small" data-pdel="' + esc(p.id) + '">Delete</button></span></div>' +
           (n ? "<details><summary>" + n + (n === 1 ? " step" : " steps") + "</summary>" + stepList(p.steps) + "</details>" : "") + seedTable(p) +
           ((p.files || []).length ? '<div class="pfiles">' + fileLinks(p.files) + "</div>" : "") + "</div>";
-      }).join("");
+      }).join("") + "</details>";
     }).join("") : '<div class="empty">No protocols yet. Read one above, or type one in the form.</div>';
     renderActionList();
     $("pReader").hidden = !state.sample;
@@ -1348,6 +1348,8 @@ window.CCL_READER_URL = "";
     $("pFormTitle").textContent = "New protocol"; $("pCancel").hidden = true; $("pSaveBtn").textContent = "Save protocol";
   }
   $("pCancel").onclick = resetProtoForm;
+  // Each cell line's protocols start folded; remember which ones are open so a refresh of the list keeps them open.
+  $("pList").addEventListener("toggle", function (ev) { var d = ev.target; if (!d.classList || !d.classList.contains("pgrp")) return; (state.pOpen = state.pOpen || {})[d.dataset.pgrp] = d.open; }, true);
   $("areaSave").onclick = async function () {
     if (!state.db) return; var a = {};
     [].forEach.call($("areaGrid").querySelectorAll("[data-area]"), function (el) { var v = num(el.value); if (v != null && v > 0) a[el.dataset.area] = v; });
@@ -1367,6 +1369,7 @@ window.CCL_READER_URL = "";
         for (var i = 0; i < up.length; i++) { var f = up[i], r = await state.assets.upload(new File([f], f.name, { type: f.type })); doc.files.push({ url: r.url, name: f.name }); }
       }
       var fromPi = state.pFormFrom, said = "";
+      (state.pOpen = state.pOpen || {})[lname || ""] = true;
       if (lname) { var pk = fromPi != null ? pickDefaults(fromPi, lname, doc.purpose) : { flat: null, by: null }, lr = await ensureLine(lname, pk.flat, pk.by); if (lr.created) said = " Added the cell line " + lname + "."; if (lr.filled) said += " Filled " + lr.filled + " of its defaults."; }
       var ref = state.pEditing ? state.db.doc("protocols/" + state.pEditing) : state.db.collection("protocols").doc();
       await ref.set(doc);
@@ -1694,6 +1697,7 @@ window.CCL_READER_URL = "";
     var p = cardProto(i), steps = p.steps, box = $("pProposal"), stat = box.querySelector('[data-pstat="' + i + '"]'), lname = p.line;
     if (stat) stat.textContent = "Saving...";
     var said = "", lr = null;
+    (state.pOpen = state.pOpen || {})[lname || ""] = true;
     if (lname) { var pk = pickDefaults(i, lname, p.purpose); lr = await ensureLine(lname, pk.flat, pk.by); if (lr.created) said = " Added the cell line " + lname + "."; if (lr.filled) said += " Filled " + lr.filled + " of its defaults."; }
     await state.db.collection("protocols").doc().set({ title: p.title, purpose: p.purpose, line: lname, version: p.version, seedMin: p.seedMin, seedMax: p.seedMax, seedNote: p.seedNote, steps: steps.map(function (x, k) { return (k + 1) + ". " + x; }).join("\n"), files: await protoSources(), createdAt: Date.now(), updatedAt: Date.now() });
     markProtoSaved(i, lname, said);
