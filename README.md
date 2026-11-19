@@ -38,13 +38,18 @@ Scroll to the very bottom of the page. You'll find four buttons there.
 
 ### Export backup
 
-Saves a copy of your whole log as one file, for example `cell-culture-backup-2026-11-18.json`.
+Saves a copy of your whole log as one file, for example `cell-culture-backup-2026-11-18_1430.json`.
 
 - It includes all your entries, cell lines, defaults, experiments, media, protocols and attached photos.
 - Your log in the browser isn't changed.
 - The file is a snapshot of that moment. Export again to include newer entries.
-- The file goes to your downloads. Move a copy to email, Google Drive or a computer, so it survives losing your device.
+- **On a phone,** it opens the phone's share menu. Tap **Drive** (Android) or **Save to Files**, then **Google Drive** (iPhone), to put it straight into your Google Drive.
+- **On a computer,** it goes to your Downloads. Move a copy to Google Drive, email or another computer, so it survives losing your device.
 - Anyone who has the file can open your log.
+
+### Backup reminder
+
+When a backup is due, a bar at the top of the page says when you last backed up, with buttons to back up now. Choose how often next to **Remind me to back up** at the bottom of the page: every day, every 3 days, every week (the usual setting), every 2 weeks, every month, or never. **Later** hides the bar until you next open the page.
 
 ### Restore a backup
 
