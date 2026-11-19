@@ -1020,6 +1020,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
   </section>
 
   <section id="protoPanel" class="wrap" style="gap:16px" hidden>
+    <div class="panel"><div class="panel-head"><h2>Protocols</h2><span class="sub" id="pCount"></span></div><div id="pList"></div></div>
     <div class="panel" id="pReader" hidden>
       <div class="panel-head"><h2>Read a protocol</h2><span class="sub">Photo, PDF, Word file or pasted text. Claude splits it into protocols, works out the cell line and fills in that cell line's defaults. Nothing is saved until you press Save.</span></div>
       <div class="actions" style="margin-top:0"><span class="filebtn">Read a file<input id="pReadFile" type="file" accept="image/*,application/pdf,.pdf,.docx,.txt,.md,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document" multiple aria-label="Read a protocol file"></span></div>
@@ -1043,7 +1044,6 @@ window.CCL_GOOGLE_CLIENT_ID = "";
         <div class="actions"><button type="submit" class="primary" id="pSaveBtn">Save protocol</button><button type="button" id="pCancel" hidden>Cancel edit</button><span class="sub" id="pMsg" role="status"></span></div>
       </form>
     </div>
-    <div class="panel"><div class="panel-head"><h2>Protocols</h2><span class="sub" id="pCount"></span></div><div id="pList"></div></div>
     <details class="panel" id="areaPanel"><summary><b>Flask growth areas</b> <span class="sub">Used to work out cells per flask. These are typical values; check your brand's datasheet and change them if they differ.</span></summary><div class="grid" id="areaGrid" style="margin-top:10px"></div><div class="actions"><button type="button" class="small primary" id="areaSave">Save areas</button><span class="sub" id="areaMsg" role="status"></span></div></details>
     <div class="panel"><div class="panel-head"><h2>Custom actions</h2><span class="sub">Actions with their own fields. They appear in the Action list of every entry.</span></div><div id="aList"></div><div class="actions"><button type="button" class="small primary" id="aNew">+ New action</button></div><div id="aEditor"></div></div>
   </section>
@@ -1204,7 +1204,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
   }
   function seedTable(p) {
     var sd = seedOf(p), tests = Array.isArray(p.seedTests) ? p.seedTests : [];
-    if (!sd && !tests.length && p.purpose !== "Passage" && p.purpose !== "Thaw") return "";
+    if (!sd && !tests.length && p.purpose !== "Passage") return "";
     var head = sd ? "Cells to seed per flask (" + esc(rangeTxt(sd.min, sd.max)) + " cells/cm²)" : "Cells to seed";
     return '<details class="seedbox"' + (sd || tests.length ? " open" : "") + "><summary>" + head + "</summary>" + (sd && sd.note ? '<div class="sub" style="margin-top:4px">Protocol says: ' + esc(sd.note) + "</div>" : "") +
       (sd ? '<table class="seedt">' + seedRows(sd, p).map(function (r) {
@@ -1218,12 +1218,13 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     var ns = (p.notesLog || []).slice().sort(function (a, b) { return String(b.date || "").localeCompare(String(a.date || "")) || (b.savedAt || 0) - (a.savedAt || 0); });
     var f = state.pnForm && state.pnForm.pid === p.id ? state.pnForm : null;
     var h = '<details class="pnotes"' + (ns.length || f ? " open" : "") + "><summary>Notes" + (ns.length ? " (" + ns.length + ")" : "") + "</summary>";
+    h += '<div class="sub" style="margin-top:4px">Note anything you have tested that deviates from this protocol. Remember to include the date.</div>';
     h += ns.map(function (x) {
       return '<div class="stest"><span class="grow"><b>' + esc(x.date || "") + "</b> \u00b7 " + esc(x.text || "") + (x.auto ? ' <span class="sub">(added by the app)</span>' : "") + "</span>" +
         '<span><button type="button" class="small" data-pnedit="' + esc(p.id) + '" data-pni="' + esc(x.id) + '">Edit</button> <button type="button" class="small" data-pndel="' + esc(p.id) + '" data-pni="' + esc(x.id) + '">Delete</button></span></div>';
     }).join("");
     if (f) h += '<div class="stform" data-pnform="' + esc(p.id) + '"><label>Date<input data-pnf="date" type="date" value="' + esc(f.date || today()) + '"></label>' +
-      '<label class="span2">Note<textarea data-pnf="text" rows="2" placeholder="e.g. Switched to Corning T75s">' + esc(f.text || "") + "</textarea></label>" +
+      '<label class="span2">Note<textarea data-pnf="text" rows="2" placeholder="e.g. Left cells in DMSO for 10 min before spinning">' + esc(f.text || "") + "</textarea></label>" +
       '<div class="span2"><button type="button" class="primary small" data-pnsave="' + esc(p.id) + '">' + (f.id ? "Save changes" : "Save note") + '</button> <button type="button" class="small" data-pncancel="1">Cancel</button> <span data-pnmsg class="sub"></span></div></div>';
     else h += '<div style="margin-top:6px"><button type="button" class="small" data-pnadd="' + esc(p.id) + '">+ Add a note</button></div>';
     return h + "</details>";
@@ -1671,7 +1672,9 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     } catch (e) {}
   }
   function fillLineList() { var dl = $("pLineList"); if (dl) dl.innerHTML = state.lines.map(function (l) { return '<option value="' + esc(l.name) + '">'; }).join(""); }
-  function protoSort(a, b) { var ia = PURPOSES.indexOf(a.purpose), ib = PURPOSES.indexOf(b.purpose); return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib) || (a.title || "").localeCompare(b.title || "") || (b.version || "").localeCompare(a.version || ""); }
+  // Order of a culture's timeline: things to make beforehand, then thaw, daily care, split, freeze.
+  var TIMELINE = ["Media prep", "Coating", "Thaw", "Change media", "Passage", "Freeze", "Other"];
+  function protoSort(a, b) { var ia = TIMELINE.indexOf(a.purpose), ib = TIMELINE.indexOf(b.purpose); return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib) || (a.title || "").localeCompare(b.title || "") || (b.version || "").localeCompare(a.version || ""); }
   function renderProtocols() {
     fillLineList(); if (!$("areaPanel").contains(document.activeElement)) renderAreas();
     var ps = state.protocols.slice(), groups = {};
@@ -1687,7 +1690,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
           (n ? "<details><summary>" + n + (n === 1 ? " step" : " steps") + "</summary>" + stepList(p.steps) + "</details>" : "") + seedTable(p) + notesHtml(p) + versionsHtml(p) +
           ((p.files || []).length ? '<div class="pfiles">' + fileLinks(p.files) + "</div>" : "") + "</div>";
       }).join("") + "</details>";
-    }).join("") : '<div class="empty">No protocols yet. Read one above, or type one in the form.</div>';
+    }).join("") : '<div class="empty">No protocols yet. Read one or type one in the form below.</div>';
     if (state.stForm) stLive($("pList").querySelector("[data-stform]"));
     renderActionList();
     $("pReader").hidden = !state.sample;

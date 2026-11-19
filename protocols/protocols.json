@@ -1,6 +1,6 @@
 {
   "about": "Lab protocols shown on the cell culture log web page. Claude Code writes this file from the protocol files in this folder.",
-  "updated": "2026-11-18",
+  "updated": "2026-11-19",
   "protocols": [
     {
       "id": "hTERT-RPE1_media",
@@ -60,7 +60,7 @@
       "purpose": "Passage",
       "line": "hTERT-RPE1",
       "version": "20260607",
-      "updated": "2026-11-18",
+      "updated": "2026-11-19",
       "files": [
         "hTERT-RPE1_protocol_lab-notes.pdf"
       ],
@@ -72,13 +72,13 @@
         "Tap the flask to reduce clumping if needed.",
         "Add 6 mL complete medium and collect the cells by gently pipetting.",
         "Resuspend in an appropriate volume of complete medium and count the cells.",
-        "Seed 4,000–6,000 viable cells/cm². For a T75 we seed 300,000–400,000 cells.",
+        "Seed 4,000–6,000 viable cells/cm². For a T75 (75 cm²): 4,000 × 75 = 300,000 to 6,000 × 75 = 450,000 cells.",
         "Incubate at 37°C, 5% CO2."
       ],
       "seeding": {
         "min": 4000,
         "max": 6000,
-        "note": "An inoculum of 4 x 10^3 to 6 x 10^3 viable cells/cm2 is recommended. For T75 flasks, we inoculate between 300,000 to 400,000 cells."
+        "note": "4,000–6,000 viable cells/cm²."
       },
       "defaults": {
         "rinse": "0.05% (w/v) Trypsin - 0.53 mM EDTA",
@@ -122,7 +122,7 @@
       "purpose": "Media prep",
       "line": "JM8.N4",
       "version": "4DN SOP Jul 2017",
-      "updated": "2026-11-18",
+      "updated": "2026-11-19",
       "files": [
         "JM8_N4_mESC-Culture.docx"
       ],
@@ -136,7 +136,7 @@
         "0.25% trypsin (1X): aliquot and freeze at −20°C."
       ],
       "defaults": {
-        "media": "JM8.N4 medium: KnockOut DMEM + 15% FBS + 2 mM GlutaMAX + 1X NEAA + 1X Pen/Strep + 1000 U/mL LIF + 0.1 mM 2-ME"
+        "media": ""
       },
       "source_note": "LIF/serum, feeder-free; adapted from the 4DN SOP (revised July 2017)."
     },
@@ -146,7 +146,7 @@
       "purpose": "Coating",
       "line": "JM8.N4",
       "version": "4DN SOP Jul 2017",
-      "updated": "2026-11-18",
+      "updated": "2026-11-19",
       "files": [
         "JM8_N4_mESC-Culture.docx"
       ],
@@ -158,7 +158,7 @@
         "Coated plates (gelatin left on) can be kept at 37°C and used within 7 days."
       ],
       "defaults": {
-        "coating": "0.1% gelatin"
+        "coating": "0.1% gelatin (EMD Millipore SF008)"
       },
       "source_note": "LIF/serum, feeder-free; adapted from the 4DN SOP (revised July 2017)."
     },
@@ -168,7 +168,7 @@
       "purpose": "Thaw",
       "line": "JM8.N4",
       "version": "4DN SOP Jul 2017",
-      "updated": "2026-11-18",
+      "updated": "2026-11-19",
       "files": [
         "JM8_N4_mESC-Culture.docx"
       ],
@@ -191,8 +191,8 @@
         "thawMediaVol": 9,
         "cenSpeed": "1,000 rpm",
         "cenTime": 5,
-        "coating": "0.1% gelatin",
-        "media": "JM8.N4 medium: KnockOut DMEM + 15% FBS + 2 mM GlutaMAX + 1X NEAA + 1X Pen/Strep + 1000 U/mL LIF + 0.1 mM 2-ME",
+        "coating": "0.1% gelatin (EMD Millipore SF008)",
+        "media": "",
         "flasks": [
           {
             "n": 1,
@@ -208,7 +208,7 @@
       "purpose": "Change media",
       "line": "JM8.N4",
       "version": "4DN SOP Jul 2017",
-      "updated": "2026-11-18",
+      "updated": "2026-11-19",
       "files": [
         "JM8_N4_mESC-Culture.docx"
       ],
@@ -218,7 +218,7 @@
         "Split at 70–80% confluence. Do not let colonies touch and merge; overgrown ES cells start to differentiate."
       ],
       "defaults": {
-        "media": "JM8.N4 medium: KnockOut DMEM + 15% FBS + 2 mM GlutaMAX + 1X NEAA + 1X Pen/Strep + 1000 U/mL LIF + 0.1 mM 2-ME"
+        "media": ""
       },
       "source_note": "LIF/serum, feeder-free; adapted from the 4DN SOP (revised July 2017)."
     },
@@ -228,7 +228,7 @@
       "purpose": "Passage",
       "line": "JM8.N4",
       "version": "4DN SOP Jul 2017",
-      "updated": "2026-11-18",
+      "updated": "2026-11-19",
       "files": [
         "JM8_N4_mESC-Culture.docx"
       ],
@@ -252,7 +252,7 @@
         "note": "3.5 x 10^5 cells per well of a 6-well plate (9.5 cm2), which is about 36,842 cells/cm2. Or split 1:6 by ratio."
       },
       "defaults": {
-        "rinse": "2 mL DPBS",
+        "rinse": "DPBS, no calcium, no magnesium",
         "dissType": "Trypsin",
         "dissConc": "0.25%",
         "dissVol": 0.5,
@@ -260,14 +260,16 @@
         "dissTime": 2,
         "cenSpeed": "1,000 rpm",
         "cenTime": 5,
-        "coating": "0.1% gelatin",
-        "media": "JM8.N4 medium: KnockOut DMEM + 15% FBS + 2 mM GlutaMAX + 1X NEAA + 1X Pen/Strep + 1000 U/mL LIF + 0.1 mM 2-ME",
+        "coating": "0.1% gelatin (EMD Millipore SF008)",
+        "media": "",
         "flasks": [
           {
             "n": 1,
             "type": "6-well"
           }
-        ]
+        ],
+        "dissBrand": "Gibco",
+        "dissCat": "25200-056"
       },
       "source_note": "LIF/serum, feeder-free; adapted from the 4DN SOP (revised July 2017)."
     },
@@ -277,7 +279,7 @@
       "purpose": "Freeze",
       "line": "JM8.N4",
       "version": "4DN SOP Jul 2017",
-      "updated": "2026-11-18",
+      "updated": "2026-11-19",
       "files": [
         "JM8_N4_mESC-Culture.docx"
       ],
@@ -294,7 +296,7 @@
         "Next day, move the vials to liquid nitrogen. Do not leave them at −80°C for more than 72 h."
       ],
       "defaults": {
-        "freezeMedia": "HyCryo-Stem 2X mixed 1:1 with cold JM8.N4 medium (1X)",
+        "freezeMedia": "HyCryo-Stem 2X (Cytiva SR30002), mixed 1:1 with cold JM8.N4 medium",
         "cenSpeed": "1,000 rpm",
         "cenTime": 5
       },
