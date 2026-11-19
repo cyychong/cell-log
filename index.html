@@ -890,8 +890,6 @@ window.CCL_GOOGLE_CLIENT_ID = "";
         <label>Centrifuge duration (min)<input id="tpl_cenTime" inputmode="decimal"></label>
         <label>Thaw: media added to vial (mL)<input id="tpl_thawMediaVol" inputmode="decimal" placeholder="9"></label>
         <label>Cells to seed (total)<input id="tpl_target" inputmode="decimal" placeholder="1e6"></label>
-        <label>Media batch<input id="tpl_media" list="batches" placeholder="M-1104"></label>
-        <label>Protocol<select id="tpl_protocol"></select></label>
         <label>Freezing media<input id="tpl_freezeMedia" placeholder="90% FBS + 10% DMSO"></label>
         <div class="sect">Usual flasks seeded</div>
         <div class="full" id="tplFlasks"></div>
@@ -1485,10 +1483,10 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     Object.defineProperty(el, "value", { get: function () { return selDesc.get.call(el); }, set: function (v) { el.__want = v; selDesc.set.call(el, v); }, configurable: true });
     el.addEventListener("change", function () { el.__want = selDesc.get.call(el); });
   }
-  trackSelect("f_protocol"); trackSelect("tpl_protocol");
+  trackSelect("f_protocol");
   function renderProtocolOptions() {
     var ps = state.protocols.slice().sort(function (a, b) { return (a.title || "").localeCompare(b.title || "") || (b.version || "").localeCompare(a.version || ""); });
-    ["f_protocol", "tpl_protocol"].forEach(function (id) {
+    ["f_protocol"].forEach(function (id) {
       var el = $(id), want = el.__want != null ? el.__want : el.value, ex = el.__extra;
       el.innerHTML = '<option value="">None</option>' + ps.map(function (p) { return '<option value="' + esc(p.id) + '">' + esc(protoLabel(p)) + "</option>"; }).join("") +
         (ex && !ps.some(function (p) { return p.id === ex[0]; }) ? '<option value="' + esc(ex[0]) + '">' + esc(ex[1]) + "</option>" : "");
@@ -1506,7 +1504,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
   }
   function onActionChange() {
     var act = $("f_action").value;
-    if (!state.editing) { var pid = protocolFor(act); $("f_protocol").value = pid || ((curLine() || {}).template || {}).protocol || ""; applyActionDefaults(act); entryFl.refresh(); try { preCalc(); } catch (e) {} }
+    if (!state.editing) { var pid = protocolFor(act); $("f_protocol").value = pid || ""; applyActionDefaults(act); entryFl.refresh(); try { preCalc(); } catch (e) {} }
     renderCustomFields(customDef(act), null);
     updateThawHint();
   }
@@ -2339,11 +2337,13 @@ window.CCL_GOOGLE_CLIENT_ID = "";
 
   // ---------- entry form ----------
   var F = ["date", "passage", "action", "split", "frozenDate", "freezeMedia", "freezeMediaExp", "frozenBy", "vialId", "mediaVol", "protocol", "rinse", "dissType", "dissBrand", "dissCat", "dissExp", "dissConc", "dissVol", "dissTemp", "dissTime", "coating", "coatingExp", "cenSpeed", "cenTime", "thawMediaVol", "c1", "c2", "target", "avg", "vol", "seeded", "media", "conf", "myco", "notes"];
-  var T = ["rinse", "dissType", "dissBrand", "dissCat", "dissExp", "dissConc", "dissVol", "dissTemp", "dissTime", "coating", "coatingExp", "cenSpeed", "cenTime", "thawMediaVol", "freezeMedia", "media", "protocol", "target"];
+  var T = ["rinse", "dissType", "dissBrand", "dissCat", "dissExp", "dissConc", "dissVol", "dissTemp", "dissTime", "coating", "coatingExp", "cenSpeed", "cenTime", "thawMediaVol", "freezeMedia", "target"];
+  // Media batch and protocol are not defaults: the batch changes between experiments, and the protocol is picked from the action.
   function curLine() { return state.lines.filter(function (l) { return l.name === state.tab; })[0] || null; }
   function applyTemplate() {
     var t = (curLine() || {}).template || {};
     T.forEach(function (k) { $("f_" + k).value = t[k] == null ? (k === "thawMediaVol" ? "9" : "") : t[k]; });
+    $("f_media").value = ""; $("f_protocol").value = protocolFor($("f_action").value) || "";
     entryFl.set(t.flasks || []);
     applyActionDefaults($("f_action").value);
   }
@@ -2445,11 +2445,11 @@ window.CCL_GOOGLE_CLIENT_ID = "";
   });
   $("tplSave").onclick = async function () {
     var l = curLine(); if (!l || !state.db) return;
-    var t = { rinse: $("tpl_rinse").value.trim(), dissType: $("tpl_dissType").value.trim(), dissBrand: $("tpl_dissBrand").value.trim(), dissCat: $("tpl_dissCat").value.trim(), dissExp: $("tpl_dissExp").value, dissConc: $("tpl_dissConc").value.trim(), dissVol: num($("tpl_dissVol").value), dissTemp: num($("tpl_dissTemp").value), dissTime: num($("tpl_dissTime").value), coating: $("tpl_coating").value.trim(), coatingExp: $("tpl_coatingExp").value, cenSpeed: $("tpl_cenSpeed").value.trim(), cenTime: num($("tpl_cenTime").value), thawMediaVol: num($("tpl_thawMediaVol").value), freezeMedia: $("tpl_freezeMedia").value.trim(), media: $("tpl_media").value.trim(), protocol: $("tpl_protocol").value, target: num($("tpl_target").value), flasks: tplFl.get() };
+    var t = { rinse: $("tpl_rinse").value.trim(), dissType: $("tpl_dissType").value.trim(), dissBrand: $("tpl_dissBrand").value.trim(), dissCat: $("tpl_dissCat").value.trim(), dissExp: $("tpl_dissExp").value, dissConc: $("tpl_dissConc").value.trim(), dissVol: num($("tpl_dissVol").value), dissTemp: num($("tpl_dissTemp").value), dissTime: num($("tpl_dissTime").value), coating: $("tpl_coating").value.trim(), coatingExp: $("tpl_coatingExp").value, cenSpeed: $("tpl_cenSpeed").value.trim(), cenTime: num($("tpl_cenTime").value), thawMediaVol: num($("tpl_thawMediaVol").value), freezeMedia: $("tpl_freezeMedia").value.trim(), target: num($("tpl_target").value), flasks: tplFl.get() };
     var old = l.template || {};
     if (old.byAction) {
       var nb = {};
-      Object.keys(old.byAction).forEach(function (a) { Object.keys(old.byAction[a] || {}).forEach(function (k) { var v = old.byAction[a][k]; if (String(v) === String(old[k] == null ? "" : old[k]) && String(t[k] == null ? "" : t[k]) !== String(v)) return; (nb[a] = nb[a] || {})[k] = v; }); });
+      Object.keys(old.byAction).forEach(function (a) { Object.keys(old.byAction[a] || {}).forEach(function (k) { if (T.indexOf(k) < 0) return; var v = old.byAction[a][k]; if (String(v) === String(old[k] == null ? "" : old[k]) && String(t[k] == null ? "" : t[k]) !== String(v)) return; (nb[a] = nb[a] || {})[k] = v; }); });
       if (Object.keys(nb).length) t.byAction = nb;
     }
     try {

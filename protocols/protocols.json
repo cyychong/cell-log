@@ -8,7 +8,7 @@
       "purpose": "Media prep",
       "line": "hTERT-RPE1",
       "version": "20260607",
-      "updated": "2026-11-18",
+      "updated": "2026-11-19",
       "files": [
         "hTERT-RPE1_protocol_lab-notes.pdf"
       ],
@@ -17,9 +17,6 @@
         "Add FBS to a final concentration of 10%.",
         "Add hygromycin B to 0.01 mg/mL (to maintain stable clones)."
       ],
-      "defaults": {
-        "media": "DMEM-F12 (ATCC #30-2006) + 10% FBS + 0.01 mg/mL hygromycin B"
-      },
       "source_note": "From the 4D Nucleosome consortium (adapted from ATCC)."
     },
     {
@@ -28,7 +25,7 @@
       "purpose": "Thaw",
       "line": "hTERT-RPE1",
       "version": "20260607",
-      "updated": "2026-11-18",
+      "updated": "2026-11-19",
       "files": [
         "hTERT-RPE1_protocol_lab-notes.pdf"
       ],
@@ -44,13 +41,13 @@
       "defaults": {
         "thawMediaVol": 9,
         "cenTime": 5,
-        "media": "DMEM-F12 (ATCC #30-2006) + 10% FBS + 0.01 mg/mL hygromycin B",
         "flasks": [
           {
             "n": 1,
             "type": "T75"
           }
-        ]
+        ],
+        "cenSpeed": "Fixed (no rpm or rcf setting)"
       },
       "source_note": "From the 4D Nucleosome consortium (adapted from ATCC)."
     },
@@ -81,19 +78,20 @@
         "note": "4,000–6,000 viable cells/cm²."
       },
       "defaults": {
-        "rinse": "0.05% (w/v) Trypsin - 0.53 mM EDTA",
+        "rinse": "0.05% (w/v) Trypsin – 0.53 mM EDTA",
         "dissType": "Trypsin-EDTA",
         "dissConc": "0.05%",
         "dissVol": 4,
         "dissTemp": 37,
         "dissTime": 5,
-        "media": "DMEM-F12 (ATCC #30-2006) + 10% FBS + 0.01 mg/mL hygromycin B",
         "flasks": [
           {
             "n": 1,
             "type": "T75"
           }
-        ]
+        ],
+        "cenSpeed": "",
+        "cenTime": ""
       },
       "source_note": "From the 4D Nucleosome consortium (adapted from ATCC)."
     },
@@ -103,7 +101,7 @@
       "purpose": "Change media",
       "line": "hTERT-RPE1",
       "version": "20260607",
-      "updated": "2026-11-18",
+      "updated": "2026-11-19",
       "files": [
         "hTERT-RPE1_protocol_lab-notes.pdf"
       ],
@@ -111,9 +109,6 @@
         "Change the medium every 2 days (or as needed).",
         "Use 12 mL for a T75 and 5 mL for a T25."
       ],
-      "defaults": {
-        "media": "DMEM-F12 (ATCC #30-2006) + 10% FBS + 0.01 mg/mL hygromycin B"
-      },
       "source_note": "From the 4D Nucleosome consortium (adapted from ATCC)."
     },
     {
@@ -135,9 +130,6 @@
         "Each day, warm only the volume you need.",
         "0.25% trypsin (1X): aliquot and freeze at −20°C."
       ],
-      "defaults": {
-        "media": ""
-      },
       "source_note": "LIF/serum, feeder-free; adapted from the 4DN SOP (revised July 2017)."
     },
     {
@@ -192,7 +184,6 @@
         "cenSpeed": "1,000 rpm",
         "cenTime": 5,
         "coating": "0.1% gelatin (EMD Millipore SF008)",
-        "media": "",
         "flasks": [
           {
             "n": 1,
@@ -217,9 +208,6 @@
         "Change the medium every day (2 mL per well of a 6-well plate). Aspirate from the side of the well, then add fresh warm medium gently down the side.",
         "Split at 70–80% confluence. Do not let colonies touch and merge; overgrown ES cells start to differentiate."
       ],
-      "defaults": {
-        "media": ""
-      },
       "source_note": "LIF/serum, feeder-free; adapted from the 4DN SOP (revised July 2017)."
     },
     {
@@ -261,7 +249,6 @@
         "cenSpeed": "1,000 rpm",
         "cenTime": 5,
         "coating": "0.1% gelatin (EMD Millipore SF008)",
-        "media": "",
         "flasks": [
           {
             "n": 1,
