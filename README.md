@@ -40,6 +40,10 @@ The **Protocols** tab shows the lab's protocols, grouped by cell line. Each cell
 
 When you add flasks to an entry, each flask type gets a box with its growth area (cm²), filled in from the protocol you picked. If your flasks are a different brand, type the right area. The entry keeps that area, so the cells to seed are worked out from it, and the log and Excel file show it, for example "2 × T75 (72 cm²)".
 
+## Cells to seed in each entry
+
+Under **Counts and seeding**, each flask you added gets its own row, so two T25s are two rows. Each row shows the flask's growth area and the protocol's range for it. Type the cells for that flask (for plates, cells per well). The row then shows the volume to add in mL and µL, and a tag if the number is below or above the protocol's range. The **Total** row adds up the cells and the volume.
+
 ## Notes on each entry
 
 Every entry has a **Notes** box near the top. Use it while you work for anything that went wrong or that you tried differently. Tick **Flag this entry** to make it stand out: flagged entries are marked ⚠ in the log, the calendar and the Excel file.

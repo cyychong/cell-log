@@ -759,6 +759,13 @@ window.CCL_GOOGLE_CLIENT_ID = "";
   .calc.pre { border-left: 3px solid #e0a100; }
   .calc.pre .rem { font-weight: 600; color: #b26a00; margin-bottom: 4px; }
   @media (prefers-color-scheme: dark) { .calc.pre .rem { color: #ffb74d; } }
+  .pft { margin-top: 6px; font-size: 13px; }
+  .pfrow { display: grid; grid-template-columns: 1.2fr 1fr 1.1fr; gap: 8px; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--line); }
+  .pfrow.head { color: var(--muted, #888); font-size: 12px; padding: 2px 0; }
+  .pfrow.tot { font-weight: 600; border-bottom: 0; }
+  .pfrow input { width: 100%; min-width: 0; }
+  .pfrow .sub { display: block; }
+  .pfauto { display: none !important; }
   .seedt { border-collapse: collapse; font-size: 13px; margin-top: 6px; width: 100%; }
   .seedt td { padding: 3px 8px 3px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
   .seedt td:last-child { text-align: right; white-space: nowrap; padding-right: 0; }
@@ -889,7 +896,6 @@ window.CCL_GOOGLE_CLIENT_ID = "";
         <label>Centrifuge speed (&times;g or rpm)<input id="tpl_cenSpeed" placeholder="300 x g"></label>
         <label>Centrifuge duration (min)<input id="tpl_cenTime" inputmode="decimal"></label>
         <label>Thaw: media added to vial (mL)<input id="tpl_thawMediaVol" inputmode="decimal" placeholder="9"></label>
-        <label>Cells to seed (total)<input id="tpl_target" inputmode="decimal" placeholder="1e6"></label>
         <label>Freezing media<input id="tpl_freezeMedia" placeholder="90% FBS + 10% DMSO"></label>
         <div class="sect">Usual flasks seeded</div>
         <div class="full" id="tplFlasks"></div>
@@ -1131,6 +1137,8 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     if (a >= 10000 || a < 0.01) return n.toExponential(3).replace(/\.?0+e/, "e").replace("e+", "e");
     return String(Number(n.toPrecision(4)));
   }
+  // A volume in mL with the same volume in µL, e.g. "0.523 mL (523 µL)".
+  function vol(v) { return v == null || !isFinite(v) ? "" : fmt(v) + " mL (" + Number((v * 1000).toPrecision(4)).toLocaleString("en-US") + " \u00b5L)"; }
   function close(a, b) { return b === 0 ? a === 0 : Math.abs(a - b) <= 0.01 * Math.abs(b); }
   function expTxt(v) { return v === "No expiry" ? "no expiry" : "exp " + v; }
   // A "No expiry" checkbox under each expiry date. The date input reads and writes "No expiry" through .value, so the rest of the code needs no changes.
@@ -1169,9 +1177,9 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     var c1 = num(e.c1), c2 = num(e.c2); if (c1 == null || c2 == null) return [];
     var t = (c1 + c2) / 2, a = num(e.avg), v = num(e.vol), s = num(e.seeded), out = [];
     out.push({ text: "Average = (" + fmt(c1) + " + " + fmt(c2) + ") \u00f7 2 = " + fmt(t), ok: a == null ? null : close(a, t), mine: a });
-    (Array.isArray(e.perFlask) ? e.perFlask : []).forEach(function (f) { if (t > 0 && num(f.cells) != null) out.push({ text: f.type + ": " + fmt(num(f.cells)) + " cells \u00f7 " + fmt(t) + " cells/mL = " + fmt(num(f.cells) / t) + " mL" + (WELLS[f.type] ? " per well" : " per flask") + (f.n > 1 ? " (\u00d7" + f.n + ")" : ""), ok: null }); });
+    (Array.isArray(e.perFlask) ? e.perFlask : []).forEach(function (f) { if (t > 0 && num(f.cells) != null) out.push({ text: (f.label || f.type) + ": " + fmt(num(f.cells)) + " cells \u00f7 " + fmt(t) + " cells/mL = " + vol(num(f.cells) / t) + (WELLS[f.type] ? " per well" : " per flask") + (f.n > 1 ? " (\u00d7" + f.n + ")" : ""), ok: null }); });
     var g = num(e.target);
-    if (g != null && t > 0) out.push({ text: "Volume to add = " + fmt(g) + " cells \u00f7 " + fmt(t) + " cells/mL = " + fmt(g / t) + " mL", ok: v == null ? null : close(v, g / t), mine: v });
+    if (g != null && t > 0) out.push({ text: "Volume to add = " + fmt(g) + " cells \u00f7 " + fmt(t) + " cells/mL = " + vol(g / t), ok: v == null ? null : close(v, g / t), mine: v });
     if (v != null) out.push({ text: "Cells seeded = " + fmt(t) + " \u00d7 " + fmt(v) + " mL = " + fmt(t * v), ok: s == null ? null : close(s, t * v), mine: s });
     return out;
   }
@@ -2337,13 +2345,13 @@ window.CCL_GOOGLE_CLIENT_ID = "";
 
   // ---------- entry form ----------
   var F = ["date", "passage", "action", "split", "frozenDate", "freezeMedia", "freezeMediaExp", "frozenBy", "vialId", "mediaVol", "protocol", "rinse", "dissType", "dissBrand", "dissCat", "dissExp", "dissConc", "dissVol", "dissTemp", "dissTime", "coating", "coatingExp", "cenSpeed", "cenTime", "thawMediaVol", "c1", "c2", "target", "avg", "vol", "seeded", "media", "conf", "myco", "notes"];
-  var T = ["rinse", "dissType", "dissBrand", "dissCat", "dissExp", "dissConc", "dissVol", "dissTemp", "dissTime", "coating", "coatingExp", "cenSpeed", "cenTime", "thawMediaVol", "freezeMedia", "target"];
-  // Media batch and protocol are not defaults: the batch changes between experiments, and the protocol is picked from the action.
+  var T = ["rinse", "dissType", "dissBrand", "dissCat", "dissExp", "dissConc", "dissVol", "dissTemp", "dissTime", "coating", "coatingExp", "cenSpeed", "cenTime", "thawMediaVol", "freezeMedia"];
+  // Media batch, protocol and cells to seed are not defaults: cells to seed depends on how many flasks are seeded, the batch changes between experiments, and the protocol is picked from the action.
   function curLine() { return state.lines.filter(function (l) { return l.name === state.tab; })[0] || null; }
   function applyTemplate() {
     var t = (curLine() || {}).template || {};
     T.forEach(function (k) { $("f_" + k).value = t[k] == null ? (k === "thawMediaVol" ? "9" : "") : t[k]; });
-    $("f_media").value = ""; $("f_protocol").value = protocolFor($("f_action").value) || "";
+    $("f_media").value = ""; $("f_target").value = ""; $("f_protocol").value = protocolFor($("f_action").value) || "";
     entryFl.set(t.flasks || []);
     applyActionDefaults($("f_action").value);
   }
@@ -2445,7 +2453,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
   });
   $("tplSave").onclick = async function () {
     var l = curLine(); if (!l || !state.db) return;
-    var t = { rinse: $("tpl_rinse").value.trim(), dissType: $("tpl_dissType").value.trim(), dissBrand: $("tpl_dissBrand").value.trim(), dissCat: $("tpl_dissCat").value.trim(), dissExp: $("tpl_dissExp").value, dissConc: $("tpl_dissConc").value.trim(), dissVol: num($("tpl_dissVol").value), dissTemp: num($("tpl_dissTemp").value), dissTime: num($("tpl_dissTime").value), coating: $("tpl_coating").value.trim(), coatingExp: $("tpl_coatingExp").value, cenSpeed: $("tpl_cenSpeed").value.trim(), cenTime: num($("tpl_cenTime").value), thawMediaVol: num($("tpl_thawMediaVol").value), freezeMedia: $("tpl_freezeMedia").value.trim(), target: num($("tpl_target").value), flasks: tplFl.get() };
+    var t = { rinse: $("tpl_rinse").value.trim(), dissType: $("tpl_dissType").value.trim(), dissBrand: $("tpl_dissBrand").value.trim(), dissCat: $("tpl_dissCat").value.trim(), dissExp: $("tpl_dissExp").value, dissConc: $("tpl_dissConc").value.trim(), dissVol: num($("tpl_dissVol").value), dissTemp: num($("tpl_dissTemp").value), dissTime: num($("tpl_dissTime").value), coating: $("tpl_coating").value.trim(), coatingExp: $("tpl_coatingExp").value, cenSpeed: $("tpl_cenSpeed").value.trim(), cenTime: num($("tpl_cenTime").value), thawMediaVol: num($("tpl_thawMediaVol").value), freezeMedia: $("tpl_freezeMedia").value.trim(), flasks: tplFl.get() };
     var old = l.template || {};
     if (old.byAction) {
       var nb = {};
@@ -2462,55 +2470,68 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     F.forEach(function (k) { $("f_" + k).value = ""; }); $("f_flag").checked = false;
     $("f_date").value = today();
     $("f_photo").value = ""; $("f_photoDesc").value = "";
-    state.pf = {}; state.editing = null; applyTemplate(); renderCustomFields(null, null); state.vialPassage = ""; $("dissScanOut").textContent = ""; ["dissType", "dissExp", "dissBrand", "dissCat", "dissConc"].forEach(function (k) { $("f_" + k).classList.remove("warn"); });
+    state.pf = {}; state.pfUsed = false; state.editing = null; applyTemplate(); renderCustomFields(null, null); state.vialPassage = ""; $("dissScanOut").textContent = ""; ["dissType", "dissExp", "dissBrand", "dissCat", "dissConc"].forEach(function (k) { $("f_" + k).classList.remove("warn"); });
     $("formTitle").textContent = "New entry"; $("saveBtn").textContent = "Save entry"; $("cancelEdit").hidden = true;
     $("formLine").textContent = isLine(state.tab) ? state.tab : "";
     liveCheck(); updateEntryVisibility();
   }
-  // Your own number of cells for each flask type (instead of the total split by area).
+  // Cells to seed, one row per flask (two T25s are two rows, so each can get its own number). Plates take cells per well.
   state.pf = {};
-  function pfList() { return entryFl.get().filter(function (f) { return num(state.pf[f.type]) != null; }).map(function (f) { return { type: f.type, n: f.n, cells: num(state.pf[f.type]) }; }); }
+  function pfRows() {
+    var out = [];
+    entryFl.get().forEach(function (f) { for (var i = 0; i < f.n; i++) out.push({ key: f.type + "#" + i, type: f.type, area: f.area, label: f.type + (f.n > 1 ? " #" + (i + 1) : "") }); });
+    return out;
+  }
+  function pfList() { return pfRows().filter(function (r) { return num(state.pf[r.key]) != null; }).map(function (r) { return { type: r.type, n: 1, cells: num(state.pf[r.key]), label: r.label }; }); }
+  function pfTotal() { var l = pfList(); return l.length ? l.reduce(function (s, f) { return s + f.cells * (WELLS[f.type] || 1); }, 0) : null; }
   function renderPerFlask() {
-    var fl = entryFl.get(), box = $("perFlask");
-    if (!fl.length) { box.innerHTML = ""; return; }
-    box.innerHTML = '<div class="sub">Your own cells for each flask (optional). Fill these in and the total above is added up for you; leave them empty to split the total by growth area.</div><div class="grid" style="margin-top:4px">' +
-      fl.map(function (f) { return "<label>" + esc(f.type) + (WELLS[f.type] ? " (cells per well)" : " (cells per flask)") + '<input data-pf="' + esc(f.type) + '" inputmode="decimal" placeholder="e.g. 3e5" value="' + esc(state.pf[f.type] == null ? "" : state.pf[f.type]) + '"></label>'; }).join("") + "</div>";
+    var rows = pfRows(), box = $("perFlask");
+    $("f_target").closest("label").classList.toggle("pfauto", rows.length > 0);
+    // Once numbers are typed per flask, the total follows them (adding or removing a flask changes it). Older entries with only a total keep it.
+    if (state.pfUsed) { var g0 = pfTotal(); $("f_target").value = g0 == null ? "" : String(g0); }
+    if (!rows.length) { box.innerHTML = ""; return; }
+    box.innerHTML = '<b>Cells to seed in each flask</b><div class="sub">Type the cells for each flask. For plates, type cells per well. The volume to add is worked out from the average count.</div>' +
+      '<div class="pft"><div class="pfrow head"><span>Flask (protocol range)</span><span>Cells to seed</span><span>Volume to add</span></div>' +
+      rows.map(function (r) {
+        return '<div class="pfrow"><span><b>' + esc(r.label) + '</b> <span class="sub">' + esc(r.area == null ? "? cm²" : fmt(r.area) + " cm²" + (WELLS[r.type] ? " per well" : "")) + '</span><span class="sub" data-pfr="' + esc(r.key) + '"></span></span>' +
+          '<input data-pf="' + esc(r.key) + '" inputmode="decimal" placeholder="' + (WELLS[r.type] ? "per well" : "e.g. 3e5") + '" aria-label="Cells to seed in ' + esc(r.label) + (WELLS[r.type] ? " per well" : "") + '" value="' + esc(state.pf[r.key] == null ? "" : state.pf[r.key]) + '"><span data-pfv="' + esc(r.key) + '"></span></div>';
+      }).join("") + '<div class="pfrow tot"><span>Total</span><span data-pftot></span><span data-pfvtot></span></div></div>';
   }
   $("perFlask").addEventListener("input", function (ev) {
     var t = ev.target; if (t.dataset.pf == null) return;
-    state.pf[t.dataset.pf] = t.value.trim();
-    var l = pfList(); if (l.length) $("f_target").value = String(l.reduce(function (s, f) { return s + f.n * f.cells * (WELLS[f.type] || 1); }, 0));
+    state.pf[t.dataset.pf] = t.value.trim(); state.pfUsed = true;
+    var g = pfTotal(); $("f_target").value = g == null ? "" : String(g);
     liveCheck();
   });
   // Worked out as soon as the counts are in, so the numbers are there at the bench. The user is reminded to check them.
   function preCalc() {
-    var c1 = num($("f_c1").value), c2 = num($("f_c2").value), g = num($("f_target").value), box = $("preBox");
-    var fl = entryFl.get(), n = flaskTotal(fl), h = '<div class="rem">\u26a0 Worked out by the app. Please check these numbers yourself before you seed.</div>';
-    var pr = state.protocols.filter(function (x) { return x.id === $("f_protocol").value; })[0], sd = seedOf(pr);
-    var ua = function (f) { var a = num(f.area) > 0 ? num(f.area) : areaOf(f.type, pr); return a == null ? null : a * (WELLS[f.type] || 1); };
-    var unknown = fl.filter(function (f) { return !ua(f); }).map(function (f) { return f.type; }), tot = fl.reduce(function (s, f) { return s + f.n * (ua(f) || 0); }, 0);
-    if (sd && fl.length && !unknown.length) h += "<div>Protocol range for " + esc(flaskText(fl)) + " (" + esc(cellsTxt(tot)) + " cm²): <b>" + esc(rangeTxt(sd.min * tot, sd.max * tot)) + " cells</b> (" + esc(rangeTxt(sd.min, sd.max)) + " cells/cm²)</div>";
-    if (c1 == null || c2 == null) { box.innerHTML = (sd && fl.length && !unknown.length ? h : "") + '<span class="sub">Enter both counts and the cells to seed: the average and the volume to add are worked out here straight away.</span>'; return; }
-    var t = (c1 + c2) / 2;
-    h += "<div>Average = (" + esc(fmt(c1)) + " + " + esc(fmt(c2)) + ") \u00f7 2 = <b>" + esc(fmt(t)) + " cells/mL</b></div>";
-    if (g == null) h += '<div class="sub">Enter the cells to seed to get the volume to add.</div>';
-    else if (t <= 0) h += '<div class="badt">The average is 0, so no volume can be worked out.</div>';
+    var c1 = num($("f_c1").value), c2 = num($("f_c2").value), box = $("preBox"), pb = $("perFlask");
+    var rows = pfRows(), pr = state.protocols.filter(function (x) { return x.id === $("f_protocol").value; })[0], sd = seedOf(pr);
+    var t = c1 != null && c2 != null ? (c1 + c2) / 2 : null, ok = t != null && t > 0;
+    var g = rows.length && pfTotal() != null ? pfTotal() : num($("f_target").value);
+    var put = function (sel, html) { var el = pb.querySelector(sel); if (el) el.innerHTML = html; };
+    // Each flask's row: protocol range, volume to add and whether the number is in range.
+    rows.forEach(function (r) {
+      var k = r.key.replace(/"/g, '\\"'), w = WELLS[r.type], a = num(r.area), c = num(state.pf[r.key]);
+      put('[data-pfr="' + k + '"]', sd && a ? esc(rangeTxt(sd.min * a, sd.max * a)) + (w ? " per well" : "") : "");
+      var h = "";
+      if (c != null && ok) h = "<b>" + esc(vol(c / t)) + "</b>" + (w ? " per well" + '<span class="sub">' + esc(vol(c * w / t)) + " per plate</span>" : "");
+      else if (c != null) h = '<span class="sub">enter both counts</span>';
+      if (c != null && sd && a) { var d = c / a; if (d < sd.min * 0.995) h += ' <span class="stag out">below range</span>'; else if (d > sd.max * 1.005) h += ' <span class="stag out">above range</span>'; }
+      put('[data-pfv="' + k + '"]', h);
+    });
+    put("[data-pftot]", g != null ? esc(cellsTxt(g)) + " cells" : "");
+    put("[data-pfvtot]", g != null && ok ? "<b>" + esc(vol(g / t)) + "</b>" : "");
+    var h = '<div class="rem">⚠ Worked out by the app. Please check these numbers yourself before you seed.</div>';
+    if (t == null) { box.innerHTML = '<span class="sub">Enter both counts: the average and the volume to add are worked out straight away.</span>'; return; }
+    h += "<div>Average = (" + esc(fmt(c1)) + " + " + esc(fmt(c2)) + ") ÷ 2 = <b>" + esc(fmt(t)) + " cells/mL</b></div>";
+    if (!ok) h += '<div class="badt">The average is 0, so no volume can be worked out.</div>';
+    else if (g == null) h += '<div class="sub">' + (rows.length ? "Type the cells for each flask in the table above." : "Enter the cells to seed to get the volume to add.") + "</div>";
     else {
-      var v = g / t;
-      h += "<div>Volume to add = " + esc(fmt(g)) + " cells \u00f7 " + esc(fmt(t)) + " cells/mL = <b>" + esc(fmt(v)) + " mL</b>" + (n > 1 ? " in total" : "") + "</div>";
-      var own = pfList();
-      if (own.length) {
-        h += "<div>Your numbers for each flask:</div><ul style=\"margin:2px 0 0 18px;padding:0\">" + own.map(function (f) {
-          var w = WELLS[f.type];
-          return "<li><b>" + esc(f.type) + "</b>" + (f.n > 1 ? " (each of " + f.n + ")" : "") + ": " + esc(cellsTxt(f.cells)) + " cells \u00f7 " + esc(fmt(t)) + " cells/mL = <b>" + esc(fmt(f.cells / t)) + " mL</b>" + (w ? " per well" : "") + "</li>";
-        }).join("") + "</ul>" + (own.length < fl.length ? '<div class="sub">Add a number for every flask type to include them all in the total.</div>' : "");
-      } else if (n > 1 && fl.length > 1 && !unknown.length) {
-        h += "<div>Split by growth area (" + esc(cellsTxt(tot)) + " cm² in total):</div><ul style=\"margin:2px 0 0 18px;padding:0\">" + fl.map(function (f) {
-          var share = ua(f) / tot, ce = g * share;
-          return "<li><b>" + esc(f.type) + "</b>" + (f.n > 1 ? " (each of " + f.n + ")" : "") + ": " + esc(fmt(g)) + " \u00d7 " + esc(cellsTxt(ua(f))) + "/" + esc(cellsTxt(tot)) + " = " + esc(cellsTxt(ce)) + " cells \u2192 <b>" + esc(fmt(ce / t)) + " mL</b>" + (WELLS[f.type] ? " per plate (" + esc(fmt(ce / t / WELLS[f.type])) + " mL per well)" : "") + "</li>";
-        }).join("") + "</ul>";
-      } else if (n > 1) h += "<div>" + (unknown.length ? "No growth area for " + esc(unknown.join(", ")) + ", so it is split evenly: " : "") + "<b>" + esc(fmt(v / n)) + " mL</b> in each of the " + n + " (" + esc(cellsTxt(g / n)) + " cells each)</div>";
-      else if (n === 1 && WELLS[fl[0].type]) h += "<div><b>" + esc(fmt(v / WELLS[fl[0].type])) + " mL</b> per well</div>";
+      var own = rows.length ? pfList() : [];
+      own.forEach(function (f) { h += "<div>" + esc(f.label) + ": " + esc(fmt(f.cells)) + " cells" + (WELLS[f.type] ? " per well" : "") + " ÷ " + esc(fmt(t)) + " cells/mL = <b>" + esc(vol(f.cells / t)) + "</b>" + (WELLS[f.type] ? " per well" : "") + "</div>"; });
+      h += "<div>" + (own.length > 1 ? "Total" : "Volume to add") + " = " + esc(fmt(g)) + " cells ÷ " + esc(fmt(t)) + " cells/mL = <b>" + esc(vol(g / t)) + "</b></div>";
+      if (rows.length && own.length < rows.length) h += '<div class="sub">' + (rows.length - own.length) + " flask" + (rows.length - own.length > 1 ? "s have" : " has") + " no number yet, so " + (rows.length - own.length > 1 ? "they are" : "it is") + " not in the total.</div>";
     }
     box.innerHTML = h;
   }
@@ -2634,7 +2655,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
       var e = state.entries.filter(function (x) { return x.id === b.dataset.edit; })[0]; if (!e) return;
       state.editing = e.id;
       F.forEach(function (k) { var v = e[k]; $("f_" + k).value = v == null ? "" : v; }); $("f_flag").checked = !!e.flag;
-      state.pf = {}; (e.perFlask || []).forEach(function (f) { state.pf[f.type] = f.cells; }); entryFl.set(flasksOf(e), true); renderPerFlask(); ensureProtocolOption(e.protocol, e.protocolName); renderCustomFor(e); updateEntryVisibility();
+      state.pf = {}; state.pfUsed = (e.perFlask || []).length > 0; var pfc = {}; (e.perFlask || []).forEach(function (f) { for (var q = 0; q < (f.n || 1); q++) { pfc[f.type] = pfc[f.type] || 0; state.pf[f.type + "#" + pfc[f.type]++] = f.cells; } }); entryFl.set(flasksOf(e), true); renderPerFlask(); ensureProtocolOption(e.protocol, e.protocolName); renderCustomFor(e); updateEntryVisibility();
       $("formTitle").textContent = "Edit entry"; $("saveBtn").textContent = "Save changes"; $("cancelEdit").hidden = false;
       liveCheck(); $("entryForm").scrollIntoView({ behavior: "smooth", block: "start" });
     } else if (b.dataset.del) {
