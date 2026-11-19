@@ -284,7 +284,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
       opts = opts || {};
       var kind = promptKind(prompt), useDevice = DEVICE_KINDS[kind] && (ocrMode() === "device" || !readerUrl());
       if (useDevice) return readDevice(opts.images || [], kind, prompt);
-      if (!readerUrl()) { var ne = new Error("This kind of scan (handwriting, vials, protocols) needs the reading service, which is not set up on this page."); ne.code = "request_failed"; return Promise.reject(ne); }
+      if (!readerUrl()) { var ne = new Error("Reading handwriting, vial labels and protocols needs the reading service, which is not set up on this page."); ne.code = "request_failed"; return Promise.reject(ne); }
       return Promise.all((opts.images || []).map(function (b) { return b64(b).then(function (d) { return { type: "image", source: { type: "base64", media_type: /^image\/(png|webp|jpeg)$/.test(b.type) ? b.type : "image/jpeg", data: d } }; }); })).then(function (imgs) {
         return callReader(JSON.stringify({ max_tokens: 8192, messages: [{ role: "user", content: imgs.concat([{ type: "text", text: prompt + "\n\nReply with only the JSON object and nothing else." }]) }] }));
       });
@@ -1073,7 +1073,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
           <label>What is on the bottle
             <select id="scanKind"><option value="mine">My media bottle (printed label + handwriting)</option><option value="base">Base medium bottle only</option><option value="fbs">FBS bottle only</option></select>
           </label>
-          <span class="filebtn" id="scanBtn">Upload a photo<input id="scanFile" type="file" accept="image/*" multiple aria-label="Upload a photo of the bottle"></span>
+          <span class="filebtn" id="scanBtn">Scan bottle<input id="scanFile" type="file" accept="image/*" multiple aria-label="Scan bottle: choose or take photos"></span>
         </div>
         <div class="scanout" id="scanOut" role="status"></div>
       </div>
@@ -1099,7 +1099,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
           <label>FBS cat #<input id="m_fbscat"></label>
           <label>FBS lot #<input id="m_fbslot"></label>
           <label>FBS expiry<input id="m_fbsexp" type="date"></label>
-          <div class="sect">Supplements <span class="sub">one card per supplement, each can be scanned</span></div>
+          <div class="sect">Supplements <span class="sub" id="suppSub">one card per supplement, each can be scanned</span></div>
           <div class="full" id="suppList"></div>
           <div class="full"><button type="button" id="suppAdd" class="small primary">+ Add supplement</button></div>
           <label>Filtered<select id="m_filt"><option value="">Choose</option><option>Yes</option><option>No</option></select></label>
@@ -2826,10 +2826,22 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     if (host) host.insertAdjacentElement("afterend", sp); else orig.insertAdjacentElement("afterend", sp);
   }
   function addCams() { ["vialScanFile", "dissScanFile", "scanFile", "m_photoFile", "baseScanFile", "fbsScanFile", "f_photo", "pReadFile"].forEach(function (id) { addCam($(id)); }); [].forEach.call(document.querySelectorAll("#suppList [data-scan]"), addCam); }
+  // The web page (outside Claude) says "Upload" where the Claude version says "Scan".
+  var WEB = !!window.__localDb;
+  (function () {
+    if (!WEB) return;
+    var set = function (id, text, aria) { var el = $(id), host = el && el.closest(".filebtn"); if (!host) return; host.firstChild.nodeValue = text; el.setAttribute("aria-label", aria); };
+    set("scanFile", "Upload a photo", "Upload a photo of the bottle");
+    set("vialScanFile", "Upload a photo", "Upload a photo of the vial label");
+    set("dissScanFile", "Upload a photo", "Upload a photo of the dissociation reagent bottle");
+    set("baseScanFile", "Upload", "Upload a photo of the base medium bottle");
+    set("fbsScanFile", "Upload", "Upload a photo of the FBS bottle");
+    $("suppSub").textContent = "one card per supplement, each can have a photo uploaded";
+  })();
   addCams();
   function renderSupp() {
     $("suppList").innerHTML = state.supp.map(function (s, i) {
-      var h = '<div class="supp"><div class="suppHead"><b>Supplement ' + (i + 1) + '</b>' + (state.sample ? '<span class="filebtn small">Scan<input type="file" accept="image/*" multiple data-scan="' + i + '" aria-label="Scan supplement ' + (i + 1) + '"></span>' : "") + '<button type="button" class="small" data-rm="' + i + '">Remove</button></div><div class="grid">';
+      var h = '<div class="supp"><div class="suppHead"><b>Supplement ' + (i + 1) + '</b>' + (state.sample ? '<span class="filebtn small">' + (WEB ? "Upload" : "Scan") + '<input type="file" accept="image/*" multiple data-scan="' + i + '" aria-label="' + (WEB ? "Upload a photo of supplement " : "Scan supplement ") + (i + 1) + '"></span>' : "") + '<button type="button" class="small" data-rm="' + i + '">Remove</button></div><div class="grid">';
       SK.forEach(function (k) {
         var w = s._warn && s._warn[k] ? " warn" : "";
         if (k === "exp") h += "<label>" + SL[k] + '<input type="date" data-i="' + i + '" data-k="exp" class="' + w + '" value="' + esc(s.exp === "No expiry" ? "" : s.exp) + '"' + (s.exp === "No expiry" ? " disabled" : "") + '><span class="noexp"><input type="checkbox" data-i="' + i + '" data-k="noexp"' + (s.exp === "No expiry" ? " checked" : "") + "> No expiry</span></label>";
