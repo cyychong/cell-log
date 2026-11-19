@@ -44,6 +44,10 @@ When you add flasks to an entry, each flask type gets a box with its growth area
 
 Under **Counts and seeding**, each flask you added gets its own row, so two T25s are two rows. Each row shows the flask's growth area and the protocol's range for it. Type the cells for that flask (for plates, cells per well). The row then shows the volume to add in mL and µL, and a tag if the number is below or above the protocol's range. The **Total** row adds up the cells and the volume.
 
+## Bottle photos for media batches
+
+On the **Media** tab, press **Add bottle photo** to take or choose photos of the bottle. They are saved with that batch and named after its batch ID: `M-1104.jpg`, then `M-1104_2.jpg` and so on. **Remove** takes a photo off before you save. The photos are in **Export backup** and in the log zip (folder `media_photos`).
+
 ## Notes on each entry
 
 Every entry has a **Notes** box near the top. Use it while you work for anything that went wrong or that you tried differently. Tick **Flag this entry** to make it stand out: flagged entries are marked ⚠ in the log, the calendar and the Excel file.

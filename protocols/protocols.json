@@ -124,7 +124,7 @@
       "steps": [
         "LIF stock: spin the lyophilized LIF vial briefly. Add sterile 0.1% BSA in water to 0.1 mg/mL (10^7 U/mL).",
         "Dilute 1:10 in medium to make a 10^6 U/mL working stock. Aliquot into single-use tubes (e.g. 600 µL). Store at −20°C; use within 3 months.",
-        "Medium (~600 mL): to 500 mL KnockOut DMEM add 90 mL FBS (not heat-inactivated, 15%), 6 mL GlutaMAX (2 mM), 6 mL MEM NEAA (1X), 6 mL Pen/Strep (1X), 600 µL LIF (1000 U/mL) and 4.6 µL 2-mercaptoethanol (0.1 mM; a 1:10 dilution stock is easier to pipette).",
+        "Medium (~600 mL): add everything to the 500 mL bottle of KnockOut DMEM. [[Reagent | Stock | Final | Amount to add; KnockOut DMEM | – | 1X | 500 mL; FBS (not heat-inactivated) | 100% | 15% | 90 mL; GlutaMAX | 200 mM (100X) | 2 mM | 6 mL; MEM Non-Essential Amino Acids | 10 mM (100X) | 1X | 6 mL; Penicillin/Streptomycin | 100X | 1X | 6 mL; LIF | 10^6 U/mL | 1000 U/mL | 600 µL; 2-Mercaptoethanol (2-ME) | 14.3 M | 0.1 mM | 4.6 µL]] 4.6 µL of 2-ME is hard to pipette accurately; a 1:10 dilution stock is easier.",
         "Filter the whole bottle through a 0.2 µm filter unit.",
         "Label \"JM8.N4 medium\", date and initials. Store at 4°C in the dark; use within ~2 weeks. Aliquots keep at −20°C for up to 3 months.",
         "Each day, warm only the volume you need.",
@@ -288,6 +288,152 @@
         "cenTime": 5
       },
       "source_note": "LIF/serum, feeder-free; adapted from the 4DN SOP (revised July 2017)."
+    },
+    {
+      "line": "C2C12",
+      "version": "20261119",
+      "updated": "2026-11-19",
+      "files": [
+        "Protocol_C2C12_20261119.pdf"
+      ],
+      "source_note": "From ATCC (CRL-1772) and Sunil Verma.",
+      "id": "C2C12_media",
+      "title": "Growth and differentiation media",
+      "purpose": "Media prep",
+      "steps": [
+        "Make both media from DMEM (ATCC 30-2002). [[Medium | Base | Serum | Antibiotic; Growth medium | DMEM (ATCC 30-2002) | 10% FBS (ATCC 30-2020) | 1% Pen/Strep; Differentiation medium | DMEM (ATCC 30-2002) | 2% horse serum (Gibco 16050130) | 1% Pen/Strep]]",
+        "Differentiation medium: make it fresh, and only enough for the current experiment (all 7–9 days).",
+        "Serum quality matters: if differentiation is poor, test a different horse serum lot."
+      ]
+    },
+    {
+      "line": "C2C12",
+      "version": "20261119",
+      "updated": "2026-11-19",
+      "files": [
+        "Protocol_C2C12_20261119.pdf"
+      ],
+      "source_note": "From ATCC (CRL-1772) and Sunil Verma.",
+      "id": "C2C12_coating",
+      "title": "Plate coating",
+      "purpose": "Coating",
+      "steps": [
+        "Coat with iMatrix11 at 10 µg/mL, or fibronectin at 10 µg/mL.",
+        "Coating improves adherence and fusion efficiency."
+      ]
+    },
+    {
+      "line": "C2C12",
+      "version": "20261119",
+      "updated": "2026-11-19",
+      "files": [
+        "Protocol_C2C12_20261119.pdf"
+      ],
+      "source_note": "From ATCC (CRL-1772) and Sunil Verma.",
+      "id": "C2C12_thaw",
+      "title": "Thawing frozen cells",
+      "purpose": "Thaw",
+      "steps": [
+        "On arrival, store frozen vials below −130°C, preferably in liquid nitrogen vapour. Do not store at −70°C (cells lose viability).",
+        "Safety: wear gloves, lab coat and a full face mask. Vials that took in liquid nitrogen can burst or blow off the cap when thawed.",
+        "Before thawing, put the flask with growth medium in the incubator for at least 15 min so the medium reaches pH 7.0–7.6.",
+        "Thaw the vial by gentle agitation in a 37°C water bath, keeping the O-ring and cap out of the water. Thawing should be quick (about 2 min).",
+        "As soon as it is thawed, take the vial out, spray or dip it in 70% ethanol, and work aseptically from here on.",
+        "Transfer the vial contents to a centrifuge tube with 9.0 mL complete growth medium. ATCC: spin at about 150–400 x g for 8–12 min (280 x g, 10 min). Our TC centrifuge has no speed setting, so spin at the lower speed for 10 min.",
+        "Discard the supernatant and resuspend the pellet in fresh growth medium.",
+        "Seed into a T25 or T75 flask (see the lot's Certificate of Analysis) at 4,000–6,000 viable cells/cm².",
+        "Incubate at 37°C, 5% CO2."
+      ],
+      "seeding": {
+        "min": 4000,
+        "max": 6000,
+        "note": "4,000–6,000 viable cells/cm²."
+      },
+      "defaults": {
+        "thawMediaVol": 9,
+        "cenSpeed": "Fixed (no rpm or rcf setting), lower speed",
+        "cenTime": 10
+      }
+    },
+    {
+      "line": "C2C12",
+      "version": "20261119",
+      "updated": "2026-11-19",
+      "files": [
+        "Protocol_C2C12_20261119.pdf"
+      ],
+      "source_note": "From ATCC (CRL-1772) and Sunil Verma.",
+      "id": "C2C12_passage",
+      "title": "Passaging proliferating cells",
+      "purpose": "Passage",
+      "steps": [
+        "Do not let cultures become confluent: it depletes the myoblasts. Subculture when cells are 80% confluent or less.",
+        "Remove and discard the culture medium.",
+        "Briefly rinse the cell layer with D-PBS (ATCC 30-2200) to remove all serum (it contains trypsin inhibitor).",
+        "Add 2.0–3.0 mL Trypsin-EDTA (ATCC 30-2101) and watch under the microscope until the cell layer disperses (usually 5–15 min).",
+        "Do not hit or shake the flask while waiting (it causes clumping). Cells that are hard to detach can be put at 37°C.",
+        "Add 6.0–8.0 mL complete growth medium and collect the cells by gently pipetting.",
+        "Add the cell suspension to new flasks at 9,000–20,000 viable cells/cm². Corning T75 flasks (cat # 430641) are recommended.",
+        "Incubate at 37°C."
+      ],
+      "seeding": {
+        "min": 9000,
+        "max": 20000,
+        "note": "9,000–20,000 viable cells/cm²."
+      },
+      "defaults": {
+        "rinse": "D-PBS, no Ca/Mg (ATCC 30-2200)",
+        "dissType": "Trypsin-EDTA",
+        "dissBrand": "ATCC",
+        "dissCat": "30-2101",
+        "dissConc": "0.05%",
+        "cenSpeed": "",
+        "cenTime": "",
+        "flasks": [
+          {
+            "n": 1,
+            "type": "T75"
+          }
+        ]
+      }
+    },
+    {
+      "line": "C2C12",
+      "version": "20261119",
+      "updated": "2026-11-19",
+      "files": [
+        "Protocol_C2C12_20261119.pdf"
+      ],
+      "source_note": "From ATCC (CRL-1772) and Sunil Verma.",
+      "id": "C2C12_media-change",
+      "title": "Change media",
+      "purpose": "Change media",
+      "steps": [
+        "Change the growth medium every 2–3 days."
+      ]
+    },
+    {
+      "line": "C2C12",
+      "version": "20261119",
+      "updated": "2026-11-19",
+      "files": [
+        "Protocol_C2C12_20261119.pdf"
+      ],
+      "source_note": "From ATCC (CRL-1772) and Sunil Verma.",
+      "id": "C2C12_differentiation",
+      "title": "Differentiation into myotubes",
+      "purpose": "Other",
+      "steps": [
+        "Use cells between passages 3 and 10.",
+        "Day 0, seeding: plate cells at 50–60% density in growth medium. Low density gives poor fusion; high density can cause detachment.",
+        "Keep cells in growth medium for at least one growth cycle (about 48 h after seeding) before switching.",
+        "Days 1–2, proliferation: watch the cells grow. They should reach about 85–90% confluence before induction. Do not let them become a full monolayer (over 90% impairs fusion).",
+        "Days 2–3, induction: switch to freshly made differentiation medium (DMEM + 2% horse serum).",
+        "Days 3–7, differentiation: change the differentiation medium every 24 h. Add medium gently down the side of the well so the cells are not disturbed.",
+        "Photograph the morphology: elongated, multinucleated myotubes should form by days 3–7.",
+        "Final analysis: assess differentiation by morphology (phase-contrast microscopy).",
+        "Mycoplasma badly affects differentiation: always use sterile technique."
+      ]
     }
   ]
 }

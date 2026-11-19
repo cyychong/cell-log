@@ -759,13 +759,19 @@ window.CCL_GOOGLE_CLIENT_ID = "";
   .calc.pre { border-left: 3px solid #e0a100; }
   .calc.pre .rem { font-weight: 600; color: #b26a00; margin-bottom: 4px; }
   @media (prefers-color-scheme: dark) { .calc.pre .rem { color: #ffb74d; } }
+  .mphotos { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+  .mphoto { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; font-size: 11px; }
+  .mphoto img { width: 72px; height: 72px; object-fit: cover; border-radius: 6px; border: 1px solid var(--line); }
+  .stept { border-collapse: collapse; margin: 6px 0 4px; font-size: 12.5px; width: 100%; }
+  .stept th { text-align: left; font-size: 11.5px; color: var(--muted, #888); padding: 3px 6px 3px 0; border-bottom: 1px solid var(--line); vertical-align: bottom; }
+  .stept td { padding: 4px 6px 4px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
   .pft { margin-top: 6px; font-size: 13px; }
   .pfrow { display: grid; grid-template-columns: 1.2fr 1fr 1.1fr; gap: 8px; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--line); }
   .pfrow.head { color: var(--muted, #888); font-size: 12px; padding: 2px 0; }
   .pfrow.tot { font-weight: 600; border-bottom: 0; }
   .pfrow input { width: 100%; min-width: 0; }
   .pfrow .sub { display: block; }
-  .pfauto { display: none !important; }
+  .pfauto, .gone { display: none !important; }
   .seedt { border-collapse: collapse; font-size: 13px; margin-top: 6px; width: 100%; }
   .seedt td { padding: 3px 8px 3px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
   .seedt td:last-child { text-align: right; white-space: nowrap; padding-right: 0; }
@@ -851,6 +857,10 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     td.calc, td.notes, td.photos, td:last-child { grid-column: 1 / -1; }
     td.ok, td.bad { padding: 4px 6px; border-radius: 4px; }
     td:last-child::before { content: none; }
+    /* Step tables stay real tables on phones. */
+    table.stept { display: table; } .stept tbody { display: table-row-group; } .stept tr { display: table-row; border: 0; padding: 0; margin: 0; }
+    .stept td, .stept th { display: table-cell; padding: 4px 6px 4px 0; border-bottom: 1px solid var(--line); font-size: 12px; white-space: normal; overflow-wrap: break-word; }
+    .stept td::before { content: none; } .stept td:empty { display: table-cell; }
     .seedt tr { display: grid; grid-template-columns: 1fr; gap: 2px; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; padding: 6px 0; margin: 0; }
     .seedt td, .seedt td:last-child { text-align: left; white-space: normal; }
   }
@@ -882,21 +892,21 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     <details class="panel" id="tplBox">
       <summary><b>Defaults for <span id="tplLine"></span></b><span class="sub" id="tplHint">Pre-fills every new entry. You can still change them per entry.</span></summary>
       <div class="grid" style="margin-top:12px">
-        <label>Rinse reagent<input id="tpl_rinse" list="rinses" placeholder="D-PBS"></label>
+        <label>Rinse reagent<input id="tpl_rinse" list="rinses" placeholder="e.g. D-PBS"></label>
         <label>Dissociation reagent<input id="tpl_dissType" list="disstypes"></label>
         <label>Dissociation brand<input id="tpl_dissBrand"></label>
         <label>Dissociation cat #<input id="tpl_dissCat"></label>
         <label>Dissociation expiry<input id="tpl_dissExp" type="date"></label>
-        <label>Concentration<input id="tpl_dissConc" placeholder="1X or 0.05%"></label>
+        <label>Concentration<input id="tpl_dissConc" placeholder="e.g. 1X or 0.05%"></label>
         <label>Volume used (mL)<input id="tpl_dissVol" inputmode="decimal"></label>
         <label>Incubation temp (&deg;C)<input id="tpl_dissTemp" inputmode="decimal"></label>
         <label>Incubation duration (min)<input id="tpl_dissTime" inputmode="decimal"></label>
-        <label>Coating<input id="tpl_coating" list="coatings" placeholder="None"></label>
+        <label>Coating<input id="tpl_coating" list="coatings" placeholder="e.g. 0.1% gelatin"></label>
         <label>Coating expiry<input id="tpl_coatingExp" type="date"></label>
-        <label>Centrifuge speed (&times;g or rpm)<input id="tpl_cenSpeed" placeholder="300 x g"></label>
+        <label>Centrifuge speed (&times;g or rpm)<input id="tpl_cenSpeed" placeholder="e.g. 300 x g"></label>
         <label>Centrifuge duration (min)<input id="tpl_cenTime" inputmode="decimal"></label>
-        <label>Thaw: media added to vial (mL)<input id="tpl_thawMediaVol" inputmode="decimal" placeholder="9"></label>
-        <label>Freezing media<input id="tpl_freezeMedia" placeholder="90% FBS + 10% DMSO"></label>
+        <label>Thaw: media added to vial (mL)<input id="tpl_thawMediaVol" inputmode="decimal" placeholder="e.g. 9"></label>
+        <label>Freezing media<input id="tpl_freezeMedia" placeholder="e.g. 90% FBS + 10% DMSO"></label>
         <div class="sect">Usual flasks seeded</div>
         <div class="full" id="tplFlasks"></div>
       </div>
@@ -933,12 +943,12 @@ window.CCL_GOOGLE_CLIENT_ID = "";
       <form id="entryForm" autocomplete="off">
         <div class="grid">
           <label>Date<input id="f_date" type="date" required></label>
-          <label><span id="passLabel">Passage #</span><input id="f_passage" inputmode="numeric" placeholder="12"></label>
+          <label><span id="passLabel">Passage #</span><input id="f_passage" inputmode="numeric" placeholder="e.g. 12"></label>
           <label>Action
             <select id="f_action"><option value="">Choose</option><option>Passage</option><option>Feed</option><option>Thaw</option><option>Change media</option><option>Freeze</option><option>Harvest</option></select>
             <span class="hint" id="thawHint"></span>
           </label>
-          <label>Split ratio<input id="f_split" placeholder="1:5"></label>
+          <label>Split ratio<input id="f_split" placeholder="e.g. 1:5"></label>
           <div class="notesbox full">
             <label>Notes <span class="sub">what went wrong, anything you tried differently, anything else</span><textarea id="f_notes" rows="2" placeholder="e.g. Trypsin left 8 min instead of 5; cells looked clumpy"></textarea></label>
             <label class="flagline"><input type="checkbox" id="f_flag"> Flag this entry: something went wrong or I tried something new</label>
@@ -951,52 +961,53 @@ window.CCL_GOOGLE_CLIENT_ID = "";
             <div class="scanout" id="vialScanOut" role="status"></div>
           </div>
           <label class="thaw" hidden>Vial frozen on<input id="f_frozenDate" type="date"></label>
-          <label class="thaw" hidden>Freezing media<input id="f_freezeMedia" placeholder="90% FBS + 10% DMSO"></label>
+          <label class="thaw" hidden>Freezing media<input id="f_freezeMedia" placeholder="e.g. 90% FBS + 10% DMSO"></label>
           <label class="thaw" hidden>Freezing media expiry<input id="f_freezeMediaExp" type="date"></label>
           <label class="thaw" hidden>Frozen by<input id="f_frozenBy"></label>
           <label class="thaw" hidden>Vial label / ID<input id="f_vialId"></label>
-          <label class="thaw" hidden>Media added to vial (mL)<input id="f_thawMediaVol" inputmode="decimal" placeholder="9"></label>
+          <label class="thaw" hidden>Media added to vial (mL)<input id="f_thawMediaVol" inputmode="decimal" placeholder="e.g. 9"></label>
           <div class="sect" id="sectDiss">Rinse and dissociation <span class="sub">pre-filled from this cell line's defaults</span></div>
           <div class="full" id="dissScanWrap"><div class="scan" id="dissScan" hidden>
             <div class="scanrow"><span class="sub" style="flex:1 1 180px">Photo of the trypsin / dissociation reagent bottle fills the reagent, brand, cat #, expiry and concentration below.</span><span class="filebtn">Scan reagent bottle<input id="dissScanFile" type="file" accept="image/*" multiple aria-label="Scan dissociation reagent bottle"></span></div>
             <div class="scanout" id="dissScanOut" role="status"></div>
           </div></div>
-          <label>Rinse reagent<input id="f_rinse" list="rinses" placeholder="D-PBS"></label>
+          <label>Rinse reagent<input id="f_rinse" list="rinses" placeholder="e.g. D-PBS"></label>
           <label>Dissociation reagent<input id="f_dissType" list="disstypes"></label>
           <label>Dissociation brand<input id="f_dissBrand"></label>
           <label>Dissociation cat #<input id="f_dissCat"></label>
           <label>Dissociation expiry<input id="f_dissExp" type="date"></label>
-          <label>Concentration<input id="f_dissConc" placeholder="1X or 0.05%"></label>
+          <label>Concentration<input id="f_dissConc" placeholder="e.g. 1X or 0.05%"></label>
           <label>Volume used (mL)<input id="f_dissVol" inputmode="decimal"></label>
           <label>Incubation temp (&deg;C)<input id="f_dissTemp" inputmode="decimal"></label>
           <label>Incubation duration (min)<input id="f_dissTime" inputmode="decimal"></label>
           <div class="sect">Centrifugation <span class="sub">pre-filled from this cell line's defaults</span></div>
-          <label>Speed (&times;g or rpm)<input id="f_cenSpeed" placeholder="300 x g"></label>
+          <label>Speed (&times;g or rpm)<input id="f_cenSpeed" placeholder="e.g. 300 x g"></label>
           <label>Duration (min)<input id="f_cenTime" inputmode="decimal"></label>
           <div class="sect" id="sectFlasks"><span id="flaskHead">Flasks seeded</span> <span class="sub" id="flaskTotal"></span></div>
           <div class="full" id="entryFlasks"></div>
           <div class="sect" id="sectCounts">Counts and seeding</div>
-          <label>Count 1 (cells/mL)<input id="f_c1" inputmode="decimal" placeholder="1.2e6"></label>
-          <label>Count 2 (cells/mL)<input id="f_c2" inputmode="decimal" placeholder="1.4e6"></label>
-          <label>Cells to seed (total)<input id="f_target" inputmode="decimal" placeholder="1e6"></label>
+          <label>Count 1 (cells/mL)<input id="f_c1" inputmode="decimal" placeholder="e.g. 1.2e6"></label>
+          <label>Count 2 (cells/mL)<input id="f_c2" inputmode="decimal" placeholder="e.g. 1.4e6"></label>
+          <label>Cells to seed (total)<input id="f_target" inputmode="decimal" placeholder="e.g. 1e6"></label>
           <div class="full" id="perFlask"></div>
           <div class="calc pre full" id="preBox" aria-live="polite"></div>
-          <label>Average count (yours)<input id="f_avg" inputmode="decimal"><span class="hint" id="h_avg"></span></label>
-          <label>Volume of cells added (mL, total)<input id="f_vol" inputmode="decimal" placeholder="0.5"></label>
-          <label>Cells seeded (yours, total)<input id="f_seeded" inputmode="decimal"><span class="hint" id="h_seeded"></span></label>
-          <div class="calc" id="calcBox" aria-live="polite"></div>
-          <label>Coating<input id="f_coating" list="coatings" placeholder="None"></label>
+          <!-- Not shown: the app works these out (kept so older entries keep their values). -->
+          <label class="gone">Average count (yours)<input id="f_avg" inputmode="decimal"><span class="hint" id="h_avg"></span></label>
+          <label class="gone">Volume of cells added (mL, total)<input id="f_vol" inputmode="decimal" placeholder="e.g. 0.5"></label>
+          <label class="gone">Cells seeded (yours, total)<input id="f_seeded" inputmode="decimal"><span class="hint" id="h_seeded"></span></label>
+          <div class="calc gone" id="calcBox" aria-live="polite"></div>
+          <label>Coating<input id="f_coating" list="coatings" placeholder="e.g. 0.1% gelatin"></label>
           <label>Coating expiry<input id="f_coatingExp" type="date"></label>
           <div class="sect">Other</div>
-          <label>Media batch<input id="f_media" list="batches" placeholder="M-1104"><span class="hint bad" id="h_media"></span></label>
+          <label>Media batch ID<input id="f_media" list="batches" placeholder="e.g. M-1104"><span class="hint bad" id="h_media"></span></label>
           <label>Protocol followed<select id="f_protocol"></select></label>
-          <label class="mediaonly" hidden>Media volume added (mL)<input id="f_mediaVol" inputmode="decimal" placeholder="15"></label>
-          <label>Confluence (%)<input id="f_conf" inputmode="decimal" placeholder="80"></label>
+          <label class="mediaonly" hidden>Media volume added (mL)<input id="f_mediaVol" inputmode="decimal" placeholder="e.g. 15"></label>
+          <label>Confluence (%)<input id="f_conf" inputmode="decimal" placeholder="e.g. 80"></label>
           <label>Mycoplasma check
             <select id="f_myco"><option value="">Choose</option><option>Negative</option><option>Positive</option><option>Not done</option></select>
           </label>
           <label id="photoField">Photo<input id="f_photo" type="file" accept="image/*"></label>
-          <label id="photoDescField">What the photo shows<input id="f_photoDesc" placeholder="confluence"></label>
+          <label id="photoDescField">What the photo shows<input id="f_photoDesc" placeholder="e.g. confluence"></label>
         </div>
         <div class="actions">
           <button type="submit" class="primary" id="saveBtn">Save entry</button>
@@ -1036,13 +1047,13 @@ window.CCL_GOOGLE_CLIENT_ID = "";
       <div class="panel-head"><h2 id="pFormTitle">New protocol</h2></div>
       <form id="protoForm" autocomplete="off">
         <div class="grid">
-          <label class="span2">Title<input id="p_title" required placeholder="Thawing cells"></label>
+          <label class="span2">Title<input id="p_title" required placeholder="e.g. Thawing cells"></label>
           <label>Purpose<select id="p_purpose"><option>Thaw</option><option>Passage</option><option>Freeze</option><option>Change media</option><option>Media prep</option><option>Coating</option><option>Other</option></select></label>
-          <label>Cell line<input id="p_line" list="pLineList" placeholder="All cell lines"><datalist id="pLineList"></datalist></label>
-          <label>Version / date<input id="p_version" placeholder="2026-11-13 or v2"></label>
-          <label>Seeding from (cells/cm²)<input id="p_seedMin" inputmode="decimal" placeholder="4e3"></label>
-          <label>Seeding to (cells/cm²)<input id="p_seedMax" inputmode="decimal" placeholder="6e3"></label>
-          <label class="full">Steps (one per line)<textarea id="p_steps" rows="9"></textarea></label>
+          <label>Cell line<input id="p_line" list="pLineList" placeholder="Leave empty for all cell lines"><datalist id="pLineList"></datalist></label>
+          <label>Version / date<input id="p_version" placeholder="e.g. 2026-11-13 or v2"></label>
+          <label>Seeding from (cells/cm²)<input id="p_seedMin" inputmode="decimal" placeholder="e.g. 4e3"></label>
+          <label>Seeding to (cells/cm²)<input id="p_seedMax" inputmode="decimal" placeholder="e.g. 6e3"></label>
+          <label class="full">Steps (one per line)<textarea id="p_steps" rows="9"></textarea><span class="sub">To put a table in a step, write it in double square brackets: [[Reagent | Amount; FBS | 90 mL; GlutaMAX | 6 mL]]. Rows are split by ; and cells by |.</span></label>
           <div class="full"><label id="pFilesField">Attach files (PDF, Word or photos)<input id="p_files" type="file" accept="application/pdf,.pdf,.doc,.docx,image/*" multiple></label><div id="pFileList" class="pfiles"></div></div>
         </div>
         <div class="actions"><button type="submit" class="primary" id="pSaveBtn">Save protocol</button><button type="button" id="pCancel" hidden>Cancel edit</button><span class="sub" id="pMsg" role="status"></span></div>
@@ -1054,7 +1065,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
 
   <section id="mediaPanel" class="wrap" style="gap:16px" hidden>
     <div class="panel">
-      <div class="panel-head"><h2 id="mediaFormTitle">New media batch</h2><span class="sub">Batch ID is what you type in the Media batch column of a log entry.</span></div>
+      <div class="panel-head"><h2 id="mediaFormTitle">New media batch</h2><span class="sub">Batch ID is what you type in the Media batch ID box of a log entry.</span></div>
       <div class="scan" id="scanBox" hidden>
         <div class="scanrow">
           <label>What is on the bottle
@@ -1066,11 +1077,12 @@ window.CCL_GOOGLE_CLIENT_ID = "";
       </div>
       <form id="mediaForm" autocomplete="off">
         <div class="grid">
-          <label>Batch ID<input id="m_id" required placeholder="M-1104"></label>
+          <label>Batch ID<input id="m_id" required placeholder="e.g. M-1104"></label>
           <label>Date made<input id="m_date" type="date"></label>
+          <div class="full" id="mPhotoBox" hidden><span class="filebtn small">Add bottle photo<input id="m_photoFile" type="file" accept="image/*" multiple aria-label="Add bottle photos"></span> <span class="sub">Take or choose a photo of the bottle. It is saved with this batch and named after its batch ID (e.g. M-1104.jpg).</span><div id="mPhotoList" class="mphotos"></div></div>
           <div class="sect">Base medium<span class="filebtn small sampleonly" hidden>Scan<input id="baseScanFile" data-kind="base" data-out="baseScanOut" type="file" accept="image/*" multiple aria-label="Scan base medium bottle"></span></div>
           <div class="scanout full" id="baseScanOut" role="status"></div>
-          <label>Base medium (item)<input id="m_base" placeholder="DMEM/F-12"></label>
+          <label>Base medium (item)<input id="m_base" placeholder="e.g. DMEM/F-12"></label>
           <label>Base medium brand<input id="m_basebrand"></label>
           <label>Base medium supplier<input id="m_basesupp"></label>
           <label>Base medium cat #<input id="m_basecat"></label>
@@ -1078,7 +1090,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
           <label>Base medium expiry<input id="m_baseexp" type="date"></label>
           <div class="sect">FBS<span class="filebtn small sampleonly" hidden>Scan<input id="fbsScanFile" data-kind="fbs" data-out="fbsScanOut" type="file" accept="image/*" multiple aria-label="Scan FBS bottle"></span></div>
           <div class="scanout full" id="fbsScanOut" role="status"></div>
-          <label>FBS (%)<input id="m_fbs" inputmode="decimal" placeholder="10"></label>
+          <label>FBS (%)<input id="m_fbs" inputmode="decimal" placeholder="e.g. 10"></label>
           <label>FBS item<input id="m_fbsitem"></label>
           <label>FBS brand<input id="m_fbsbrand"></label>
           <label>FBS supplier<input id="m_fbssupp"></label>
@@ -1089,7 +1101,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
           <div class="full" id="suppList"></div>
           <div class="full"><button type="button" id="suppAdd" class="small primary">+ Add supplement</button></div>
           <label>Filtered<select id="m_filt"><option value="">Choose</option><option>Yes</option><option>No</option></select></label>
-          <label>Volume (mL)<input id="m_vol" inputmode="decimal" placeholder="500"></label>
+          <label>Volume (mL)<input id="m_vol" inputmode="decimal" placeholder="e.g. 500"></label>
           <label>Use by<input id="m_use" type="date"></label>
           <label class="span2">Notes<input id="m_notes"></label>
         </div>
@@ -1480,7 +1492,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
   // ---------- protocols and custom actions ----------
   var PURPOSES = ["Thaw", "Passage", "Freeze", "Change media", "Media prep", "Coating", "Other"];
   var PURPOSE_OF = { Thaw: "Thaw", Passage: "Passage", Split: "Passage", Harvest: "Passage", Freeze: "Freeze", "Change media": "Change media", Feed: "Change media" };
-  var USES = [["split", "Split ratio"], ["diss", "Rinse and dissociation"], ["cen", "Centrifugation"], ["counts", "Counts and seeding"], ["flasks", "Flasks"], ["coating", "Coating"], ["conf", "Confluence"], ["myco", "Mycoplasma check"], ["media", "Media batch"]];
+  var USES = [["split", "Split ratio"], ["diss", "Rinse and dissociation"], ["cen", "Centrifugation"], ["counts", "Counts and seeding"], ["flasks", "Flasks"], ["coating", "Coating"], ["conf", "Confluence"], ["myco", "Mycoplasma check"], ["media", "Media batch ID"]];
   var FTYPES = [["text", "Text"], ["number", "Number"], ["date", "Date"], ["choice", "Choice"]];
   function protoLabel(p) { return (p.title || "Protocol") + (p.version ? " (" + p.version + ")" : "") + (p.line ? " · " + p.line : ""); }
 
@@ -1524,9 +1536,21 @@ window.CCL_GOOGLE_CLIENT_ID = "";
   }
 
   // ---- Protocols tab ----
+  // A step can hold a table: [[Head | Head; cell | cell; ...]] (rows split by ";", cells by "|"), so it stays one line when edited.
+  function stepParts(x) {
+    var m = String(x || "").match(/^(.*?)\[\[(.+?)\]\](.*)$/); if (!m) return { text: String(x || ""), table: null, after: "" };
+    var rows = m[2].split(";").map(function (row) { return row.split("|").map(function (c) { return c.trim(); }); }).filter(function (row) { return row.some(Boolean); });
+    return { text: m[1].trim(), table: rows.length ? rows : null, after: m[3].trim() };
+  }
+  function stepTableText(x) { var q = stepParts(x); return q.table ? [q.text].concat(q.table.map(function (row) { return "   " + row.join(" | "); }), q.after ? [q.after] : []).filter(Boolean).join("\n") : String(x || ""); }
   function stepList(txt) {
-    var items = String(txt || "").split(/\r?\n/).map(function (x) { return x.replace(/^\s*(\d+[.)]|[-•*])\s*/, "").trim(); }).filter(Boolean);
-    return items.length ? "<ol>" + items.map(function (x) { return "<li>" + esc(x) + "</li>"; }).join("") + "</ol>" : "";
+    var items = String(txt || "").split(/\r?\n/).map(function (x) { return x.replace(/^\s*(\d+[.)](?!\d)|[-•*])\s*/, "").trim(); }).filter(Boolean);
+    return items.length ? "<ol>" + items.map(function (x) {
+      var q = stepParts(x);
+      if (!q.table) return "<li>" + esc(x) + "</li>";
+      return "<li>" + esc(q.text) + '<table class="stept"><tr>' + q.table[0].map(function (c) { return "<th>" + esc(c) + "</th>"; }).join("") + "</tr>" +
+        q.table.slice(1).map(function (row) { return "<tr>" + row.map(function (c) { return "<td>" + esc(c) + "</td>"; }).join("") + "</tr>"; }).join("") + "</table>" + (q.after ? '<div class="sub">' + esc(q.after) + "</div>" : "") + "</li>";
+    }).join("") + "</ol>" : "";
   }
   function fileLinks(files) { return (files || []).map(function (f) { return '<a href="' + esc(f.url) + '" target="_blank" rel="noopener">' + esc(f.name) + "</a>"; }).join(""); }
   function ymd(ts) { if (!ts) return ""; var d = new Date(Number(ts)); return isNaN(d) ? "" : new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10); }
@@ -1557,10 +1581,26 @@ window.CCL_GOOGLE_CLIENT_ID = "";
       var steps = p.steps || [], lh = 5.4;
       if (!steps.length) { doc.text("No steps written.", M, y); y += lh; }
       steps.forEach(function (st, k) {
-        var lines = doc.splitTextToSize(pdfText(st), tw - 9);
+        var q = stepParts(st), lines = doc.splitTextToSize(pdfText(q.table ? q.text : st), tw - 9);
         if (y + lines.length * lh > H - M) { doc.addPage(); header(false); y = M + 2; }
         doc.setFont("helvetica", "bold"); doc.text((k + 1) + ".", M, y); doc.setFont("helvetica", "normal");
         doc.text(lines, M + 9, y); y += lines.length * lh + 2.6;
+        if (q.table) {
+          // Step table: equal columns, header in bold, each row as tall as its longest cell.
+          var nc = Math.max.apply(null, q.table.map(function (row) { return row.length; })), cw = (tw - 9) / nc;
+          doc.setFontSize(10);
+          q.table.forEach(function (row, ri) {
+            var cells = []; for (var c = 0; c < nc; c++) cells.push(doc.splitTextToSize(pdfText(row[c] || ""), cw - 2));
+            var rh = Math.max.apply(null, cells.map(function (x) { return x.length; })) * 4.6 + 1.6;
+            if (y + rh > H - M) { doc.addPage(); header(false); y = M + 2; }
+            doc.setFont("helvetica", ri ? "normal" : "bold");
+            cells.forEach(function (x, c) { doc.text(x, M + 9 + c * cw, y); });
+            y += rh; doc.setDrawColor(215); doc.line(M + 9, y - 3.6, W - M, y - 3.6);
+          });
+          doc.setFont("helvetica", "normal"); doc.setFontSize(11);
+          if (q.after) { var al = doc.splitTextToSize(pdfText(q.after), tw - 9); doc.text(al, M + 9, y); y += al.length * lh; }
+          y += 2.6;
+        }
       });
       var sd = seedOf(p);
       if (sd) {
@@ -1642,7 +1682,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
         if (cur && cur.edited) {
           // This person has their own version: keep it in use, and file the lab's new version under Earlier versions.
           var lsd = p.seeding || {}, lv = { version: String(p.version || ""), date: String(p.updated || "").slice(0, 10), title: String(p.title || ""), purpose: PURPOSES.indexOf(p.purpose) >= 0 ? p.purpose : "Other", line: String(p.line || ""),
-            steps: (Array.isArray(p.steps) ? p.steps : String(p.steps || "").split(/\r?\n/)).map(function (x) { return String(x).trim(); }).filter(Boolean).map(function (x, k) { return (k + 1) + ". " + x.replace(/^\s*\d+[.)]\s*/, ""); }).join("\n"),
+            steps: (Array.isArray(p.steps) ? p.steps : String(p.steps || "").split(/\r?\n/)).map(function (x) { return String(x).trim(); }).filter(Boolean).map(function (x, k) { return (k + 1) + ". " + x.replace(/^\s*\d+[.)](?!\d)\s*/, ""); }).join("\n"),
             seedMin: num(lsd.min), seedMax: num(lsd.max), seedNote: String(lsd.note || ""), fromSite: true, replacedAt: Date.now() };
           await state.db.doc("protocols/" + id).update({ siteStamp: stamp, versions: (cur.versions || []).concat([lv]), notesLog: (cur.notesLog || []).concat([{ id: "n" + Date.now().toString(36) + k0(), date: today(), text: "The lab site has a newer version (" + (lv.version || "no version") + "). Your version " + (cur.version || "") + " is still the one in use; the lab's is under Earlier versions.", auto: true, savedAt: Date.now() }]) });
           n++; continue;
@@ -1650,7 +1690,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
         var sd = p.seeding || {}, um = String(p.updated || "").match(/^(\d{4})-(\d{2})-(\d{2})/), up = um ? new Date(+um[1], +um[2] - 1, +um[3], 12).getTime() : NaN;
         await state.db.doc("protocols/" + id).set({
           title: String(p.title || "Protocol"), purpose: PURPOSES.indexOf(p.purpose) >= 0 ? p.purpose : "Other", line: String(p.line || ""), version: String(p.version || ""),
-          steps: (Array.isArray(p.steps) ? p.steps : String(p.steps || "").split(/\r?\n/)).map(function (x) { return String(x).trim(); }).filter(Boolean).map(function (x, k) { return (k + 1) + ". " + x.replace(/^\s*\d+[.)]\s*/, ""); }).join("\n"),
+          steps: (Array.isArray(p.steps) ? p.steps : String(p.steps || "").split(/\r?\n/)).map(function (x) { return String(x).trim(); }).filter(Boolean).map(function (x, k) { return (k + 1) + ". " + x.replace(/^\s*\d+[.)](?!\d)\s*/, ""); }).join("\n"),
           seedMin: num(sd.min), seedMax: num(sd.max), seedNote: String(sd.note || ""),
           files: (Array.isArray(p.files) ? p.files : []).map(function (f) { return { name: String(f), url: "protocols/" + encodeURIComponent(String(f)) }; }),
           seedTests: (cur && cur.seedTests) || [], areas: (cur && cur.areas) || {}, notesLog: siteNotes(cur, p), versions: siteVersions(cur), source: "site", siteStamp: stamp, createdAt: cur && cur.createdAt ? cur.createdAt : Date.now(), updatedAt: isNaN(up) ? Date.now() : up
@@ -1735,7 +1775,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
   };
   $("pFileList").addEventListener("click", function (ev) { var b = ev.target.closest("button"); if (b && b.dataset.prmf != null) { state.pEditFiles.splice(Number(b.dataset.prmf), 1); renderPFiles(); } });
   // Editing a saved protocol's content makes a new, dated version. The old one is kept under "Earlier versions", and a dated note says what changed.
-  function stepsKey(t) { return String(t || "").split(/\r?\n/).map(function (x) { return x.replace(/^\s*\d+[.)]\s*/, "").trim(); }).filter(Boolean).join("\n"); }
+  function stepsKey(t) { return String(t || "").split(/\r?\n/).map(function (x) { return x.replace(/^\s*\d+[.)](?!\d)\s*/, "").trim(); }).filter(Boolean).join("\n"); }
   function newVersion(prev, doc) {
     ["source", "siteStamp", "siteId"].forEach(function (k) { if (prev[k] != null) doc[k] = prev[k]; });
     doc.notesLog = (prev.notesLog || []).slice(); doc.versions = (prev.versions || []).slice();
@@ -1930,7 +1970,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
   }
 
   // ---------- read a protocol (image, PDF, Word, text) ----------
-  var DEFK = [["rinse", "Rinse reagent"], ["dissType", "Dissociation reagent"], ["dissBrand", "Dissociation brand"], ["dissCat", "Dissociation cat #"], ["dissConc", "Concentration"], ["dissVol", "Dissociation volume (mL)"], ["dissTemp", "Incubation temp (°C)"], ["dissTime", "Incubation duration (min)"], ["cenSpeed", "Centrifuge speed"], ["cenTime", "Centrifuge duration (min)"], ["coating", "Coating"], ["freezeMedia", "Freezing media"], ["thawMediaVol", "Thaw: media added to vial (mL)"], ["media", "Media batch"]];
+  var DEFK = [["rinse", "Rinse reagent"], ["dissType", "Dissociation reagent"], ["dissBrand", "Dissociation brand"], ["dissCat", "Dissociation cat #"], ["dissConc", "Concentration"], ["dissVol", "Dissociation volume (mL)"], ["dissTemp", "Incubation temp (°C)"], ["dissTime", "Incubation duration (min)"], ["cenSpeed", "Centrifuge speed"], ["cenTime", "Centrifuge duration (min)"], ["coating", "Coating"], ["freezeMedia", "Freezing media"], ["thawMediaVol", "Thaw: media added to vial (mL)"], ["media", "Media batch ID"]];
   var DEFNUM = { dissVol: 1, dissTemp: 1, dissTime: 1, cenTime: 1, thawMediaVol: 1 };
   var loaded = {};
   function loadScript(src) {
@@ -2115,10 +2155,10 @@ window.CCL_GOOGLE_CLIENT_ID = "";
       h += '<div class="pcard pedit" data-proto="' + pi + '"><div class="pcardHead"><b>' + esc(String(p.title || "Protocol " + (pi + 1))) + '</b><span class="sub">' + esc(purposeOf(p)) + " · " + steps.length + (steps.length === 1 ? " step" : " steps") + '</span><span><button type="button" class="small primary" data-psave="' + pi + '">Save</button> <button type="button" class="small" data-ppdfp="' + pi + '">PDF</button></span></div>' +
         '<div class="grid" style="margin-top:8px"><label class="span2">Title<input data-ptitle="' + pi + '" value="' + esc(String(p.title || "")) + '"></label>' +
         '<label>Purpose<select data-ppurpose="' + pi + '">' + PURPOSES.map(function (x) { return "<option" + (x === purposeOf(p) ? " selected" : "") + ">" + esc(x) + "</option>"; }).join("") + "</select></label>" +
-        '<label>Version / date<input data-pver="' + pi + '" value="' + esc(String(p.version || "")) + '" placeholder="' + today() + '"></label>' +
+        '<label>Version / date<input data-pver="' + pi + '" value="' + esc(String(p.version || "")) + '" placeholder="e.g. ' + today() + '"></label>' +
         '<label>Seeding from (cells/cm²)<input data-pseedmin="' + pi + '" inputmode="decimal" value="' + esc(num((p.seeding || {}).min) == null ? "" : num(p.seeding.min)) + '"></label>' +
         '<label>Seeding to (cells/cm²)<input data-pseedmax="' + pi + '" inputmode="decimal" value="' + esc(num((p.seeding || {}).max) == null ? "" : num(p.seeding.max)) + '"></label>' +
-        '<label>Cell line<input data-pline="' + pi + '" list="pLineList" value="' + esc(lv) + '"' + (own && own !== docLine ? ' data-own="1"' : "") + ' placeholder="All cell lines"></label><div class="sub" data-plnote="1" style="align-self:end"></div>' +
+        '<label>Cell line<input data-pline="' + pi + '" list="pLineList" value="' + esc(lv) + '"' + (own && own !== docLine ? ' data-own="1"' : "") + ' placeholder="Leave empty for all cell lines"></label><div class="sub" data-plnote="1" style="align-self:end"></div>' +
         '<label class="full">Steps (one per line). Fix anything that was read wrong.<textarea data-psteps="' + pi + '" rows="' + Math.min(18, Math.max(4, steps.length + 1)) + '">' + esc(steps.map(function (x, k) { return (k + 1) + ". " + x; }).join("\n")) + "</textarea></label></div>" + defs +
         (un.length ? '<div class="pdefs"><b class="badt">Check these</b><ul style="margin:6px 0 0 18px;font-size:13px">' + un.map(function (x) { return "<li>" + esc(String(x)) + "</li>"; }).join("") + "</ul></div>" : "") +
         '<div class="sub" data-pstat="' + pi + '" role="status" style="margin-top:6px"></div></div>';
@@ -2137,7 +2177,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
         { onSaved: function (name) { host.innerHTML = '<div class="sub">Created the action "' + esc(name) + '". It is now in the Action list.</div>'; } });
     });
   }
-  function cleanSteps(txt) { return String(txt || "").split(/\r?\n/).map(function (x) { return x.replace(/^\s*(\d+[.)]|[-\u2022*])\s*/, "").trim(); }).filter(Boolean); }
+  function cleanSteps(txt) { return String(txt || "").split(/\r?\n/).map(function (x) { return x.replace(/^\s*(\d+[.)](?!\d)|[-\u2022*])\s*/, "").trim(); }).filter(Boolean); }
   function cardProto(i) {
     var box = $("pProposal"), q = function (a) { return box.querySelector("[" + a + '="' + i + '"]'); }, p = state.pProtos[i];
     var lname = String(q("data-pline") ? q("data-pline").value : "").trim(), m = lineMatch(lname); if (m) lname = m.name;
@@ -2494,7 +2534,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
       '<div class="pft"><div class="pfrow head"><span>Flask (protocol range)</span><span>Cells to seed</span><span>Volume to add</span></div>' +
       rows.map(function (r) {
         return '<div class="pfrow"><span><b>' + esc(r.label) + '</b> <span class="sub">' + esc(r.area == null ? "? cm²" : fmt(r.area) + " cm²" + (WELLS[r.type] ? " per well" : "")) + '</span><span class="sub" data-pfr="' + esc(r.key) + '"></span></span>' +
-          '<input data-pf="' + esc(r.key) + '" inputmode="decimal" placeholder="' + (WELLS[r.type] ? "per well" : "e.g. 3e5") + '" aria-label="Cells to seed in ' + esc(r.label) + (WELLS[r.type] ? " per well" : "") + '" value="' + esc(state.pf[r.key] == null ? "" : state.pf[r.key]) + '"><span data-pfv="' + esc(r.key) + '"></span></div>';
+          '<input data-pf="' + esc(r.key) + '" inputmode="decimal" placeholder="' + (WELLS[r.type] ? "e.g. 3e4 per well" : "e.g. 3e5") + '" aria-label="Cells to seed in ' + esc(r.label) + (WELLS[r.type] ? " per well" : "") + '" value="' + esc(state.pf[r.key] == null ? "" : state.pf[r.key]) + '"><span data-pfv="' + esc(r.key) + '"></span></div>';
       }).join("") + '<div class="pfrow tot"><span>Total</span><span data-pftot></span><span data-pfvtot></span></div></div>';
   }
   $("perFlask").addEventListener("input", function (ev) {
@@ -2529,7 +2569,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     else if (g == null) h += '<div class="sub">' + (rows.length ? "Type the cells for each flask in the table above." : "Enter the cells to seed to get the volume to add.") + "</div>";
     else {
       var own = rows.length ? pfList() : [];
-      own.forEach(function (f) { h += "<div>" + esc(f.label) + ": " + esc(fmt(f.cells)) + " cells" + (WELLS[f.type] ? " per well" : "") + " ÷ " + esc(fmt(t)) + " cells/mL = <b>" + esc(vol(f.cells / t)) + "</b>" + (WELLS[f.type] ? " per well" : "") + "</div>"; });
+      if (own.length > 1) own.forEach(function (f) { h += "<div>" + esc(f.label) + ": " + esc(fmt(f.cells)) + " cells" + (WELLS[f.type] ? " per well" : "") + " ÷ " + esc(fmt(t)) + " cells/mL = <b>" + esc(vol(f.cells / t)) + "</b>" + (WELLS[f.type] ? " per well" : "") + "</div>"; });
       h += "<div>" + (own.length > 1 ? "Total" : "Volume to add") + " = " + esc(fmt(g)) + " cells ÷ " + esc(fmt(t)) + " cells/mL = <b>" + esc(vol(g / t)) + "</b></div>";
       if (rows.length && own.length < rows.length) h += '<div class="sub">' + (rows.length - own.length) + " flask" + (rows.length - own.length > 1 ? "s have" : " has") + " no number yet, so " + (rows.length - own.length > 1 ? "they are" : "it is") + " not in the total.</div>";
     }
@@ -2629,7 +2669,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     $("logTable").innerHTML = tableHtml(rows); labelCells($("logTable"));
   }
   function tableHtml(rows) {
-    var h = "<table><thead><tr><th>Date</th><th>Passage #</th><th>Action</th><th>Split ratio</th><th>Thaw details</th><th>Flasks seeded</th><th>Coating</th><th>Rinse</th><th>Dissociation</th><th>Centrifuge</th><th>Protocol fields</th><th>Count 1</th><th>Count 2</th><th>Average count (yours)</th><th>Volume added (mL)</th><th>Cells seeded (yours)</th><th>Calculated by Claude</th><th>Media batch</th><th>Confluence (%)</th><th>Mycoplasma</th><th>Protocol</th><th>Notes</th><th>Photo</th><th></th></tr></thead><tbody>";
+    var h = "<table><thead><tr><th>Date</th><th>Passage #</th><th>Action</th><th>Split ratio</th><th>Thaw details</th><th>Flasks seeded</th><th>Coating</th><th>Rinse</th><th>Dissociation</th><th>Centrifuge</th><th>Protocol fields</th><th>Count 1</th><th>Count 2</th><th>Average count (yours)</th><th>Volume added (mL)</th><th>Cells seeded (yours)</th><th>Calculated by Claude</th><th>Media batch ID</th><th>Confluence (%)</th><th>Mycoplasma</th><th>Protocol</th><th>Notes</th><th>Photo</th><th></th></tr></thead><tbody>";
     rows.forEach(function (e) {
       var c = check(e);
       function cell(val, r) {
@@ -2771,7 +2811,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
       SK.forEach(function (k) {
         var w = s._warn && s._warn[k] ? " warn" : "";
         if (k === "exp") h += "<label>" + SL[k] + '<input type="date" data-i="' + i + '" data-k="exp" class="' + w + '" value="' + esc(s.exp === "No expiry" ? "" : s.exp) + '"' + (s.exp === "No expiry" ? " disabled" : "") + '><span class="noexp"><input type="checkbox" data-i="' + i + '" data-k="noexp"' + (s.exp === "No expiry" ? " checked" : "") + "> No expiry</span></label>";
-        else h += "<label>" + SL[k] + '<input data-i="' + i + '" data-k="' + k + '" class="' + w + '" value="' + esc(s[k]) + '"' + (k === "stock" ? ' placeholder="100X or 10 mg/mL"' : k === "final" ? ' placeholder="1X or 10 ug/mL"' : "") + "></label>";
+        else h += "<label>" + SL[k] + '<input data-i="' + i + '" data-k="' + k + '" class="' + w + '" value="' + esc(s[k]) + '"' + (k === "stock" ? ' placeholder="e.g. 100X or 10 mg/mL"' : k === "final" ? ' placeholder="e.g. 1X or 10 ug/mL"' : "") + "></label>";
       });
       return h + '</div><div class="suppMsg" role="status">' + (s._msg || "") + "</div></div>";
     }).join("");
@@ -2811,7 +2851,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
       var vals = { item: r.product, brand: r.brand || r.manufacturer, supplier: r.supplier, cat: r.catalog, lot: r.lot, exp: exp, stock: r.stock }, got = [];
       s._warn = {};
       Object.keys(map).forEach(function (src) { var k = map[src], v = String(vals[k] || "").trim(); if (!v) return; s[k] = v; got.push(v); if (unsure.indexOf(src) >= 0) s._warn[k] = true; });
-      blobs.forEach(function (b) { state.pending.push({ blob: b, kind: "supp" + (i + 1) }); });
+      blobs.forEach(function (b) { state.pending.push({ blob: b, kind: "supp" + (i + 1) }); }); renderMPhotos();
       s._msg = (got.length ? "Filled in: " + esc(got.join(" | ")) + ". <b>Check against the bottle before saving.</b>" + (unsure.length ? " Amber fields were hard to read." : "") : "Nothing readable found.") + " Type the final concentration yourself.";
     } catch (e) {
       s._msg = e && e.code === "not_granted" ? "Scanning was not allowed." : "Could not read that photo" + (e && e.message ? ": " + esc(e.message) : ".");
@@ -2819,10 +2859,32 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     renderSupp();
   }
 
+  // Bottle photos are named after the batch ID: M-1104.jpg, then M-1104_2.jpg, M-1104_3.jpg...
+  function photoName(id, n) { var b = slug(id) || "batch"; return n <= 1 ? b + ".jpg" : b + "_" + n + ".jpg"; }
+  // Names for new photos: the lowest numbers not already taken by the batch's kept photos.
+  function newPhotoNames(id, kept, count) { var used = (kept || []).map(function (x) { return x.name; }), out = [], k = 1; while (out.length < count) { var nm = photoName(id, k++); if (used.indexOf(nm) < 0) out.push(nm); } return out; }
+  function renderMPhotos() {
+    $("mPhotoBox").hidden = !state.assets;
+    var keep = state.mKeep || [], pend = state.pending || [], id = $("m_id").value, names = newPhotoNames(id, keep, pend.length);
+    $("mPhotoList").innerHTML = keep.map(function (p, i) { return '<span class="mphoto"><img src="' + esc(p.url) + '" alt="' + esc(p.name) + '">' + esc(p.name) + ' <button type="button" class="small" data-mprm="' + i + '">Remove</button></span>'; }).join("") +
+      pend.map(function (p, i) { if (!p.url) p.url = URL.createObjectURL(p.blob); return '<span class="mphoto"><img src="' + esc(p.url) + '" alt="New photo">' + esc(names[i]) + ' <button type="button" class="small" data-mpprm="' + i + '">Remove</button></span>'; }).join("");
+  }
+  $("m_photoFile").addEventListener("change", async function () {
+    var files = Array.prototype.slice.call(this.files || []); this.value = "";
+    for (var i = 0; i < files.length; i++) { try { state.pending.push({ blob: await downscale(files[i], 1800), kind: "photo" }); } catch (e) { state.pending.push({ blob: files[i], kind: "photo" }); } }
+    renderMPhotos();
+  });
+  $("mPhotoList").addEventListener("click", function (ev) {
+    var b = ev.target.closest("button"); if (!b) return;
+    if (b.dataset.mprm != null) state.mKeep.splice(Number(b.dataset.mprm), 1);
+    else if (b.dataset.mpprm != null) state.pending.splice(Number(b.dataset.mpprm), 1);
+    renderMPhotos();
+  });
+  $("m_id").addEventListener("input", function () { if ((state.pending || []).length) renderMPhotos(); });
   function resetMediaForm() {
     Object.keys(M).forEach(function (k) { $(M[k]).value = ""; });
-    $("m_date").value = today(); state.editingMedia = null; state.pending = []; state.supp = [suppBlank()]; renderSupp();
-    $("scanOut").innerHTML = ""; clearWarn();
+    $("m_date").value = today(); state.editingMedia = null; state.pending = []; state.mKeep = []; state.supp = [suppBlank()]; renderSupp();
+    $("scanOut").innerHTML = ""; clearWarn(); renderMPhotos();
     $("mediaFormTitle").textContent = "New media batch"; $("cancelMedia").hidden = true; $("m_id").readOnly = false;
   }
 
@@ -2914,7 +2976,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
         got.push(item + (sp.final ? " " + sp.final : ""));
       });
       state.supp = list.length ? list : [suppBlank()]; renderSupp();
-      (tiled ? [await downscale(files[0], 1800)] : blobs).forEach(function (b) { state.pending.push({ blob: b, kind: "media" }); });
+      (tiled ? [await downscale(files[0], 1800)] : blobs).forEach(function (b) { state.pending.push({ blob: b, kind: "media" }); }); renderMPhotos();
       out.innerHTML = (got.length ? "Filled in: " + esc(got.join(" | ")) + ".<br><b>Check against the bottle before saving.</b>" + (unsure.length ? " Amber fields were hard to read." : "") : "Nothing readable found.") + (notes.length ? "<br>" + notes.join(" ") : "");
     } catch (e) {
       out.textContent = e && e.code === "not_granted" ? "Scanning was not allowed." : "Could not read that photo" + (e && e.message ? ": " + e.message : ".");
@@ -2952,7 +3014,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
         put("m_fbsitem", prod, u("product")); put("m_fbsbrand", brand, u("brand")); put("m_fbssupp", sup, u("supplier")); put("m_fbscat", cat, u("catalog"));
         put("m_fbslot", lot, u("lot")); put("m_fbsexp", exp, u("expiry"));
       }
-      blobs.forEach(function (b) { state.pending.push({ blob: b, kind: kind }); });
+      blobs.forEach(function (b) { state.pending.push({ blob: b, kind: kind }); }); renderMPhotos();
       var url = URL.createObjectURL(blob);
       var read = [prod && "Item: " + prod, brand && "Brand: " + brand, sup && "Supplier: " + sup, cat && "Cat #: " + cat, lot && "Lot: " + lot, exp && "Expiry: " + exp].filter(Boolean).join(" | ") || "Nothing readable found.";
       out.innerHTML = '<img alt="Scanned bottle" src="' + url + '"><div>' + (blobs.length > 1 ? blobs.length + " photos read. " : "") + esc(read) + "<br><b>Check against the bottle before saving.</b>" + (unsure.length ? " Amber fields were hard to read." : "") + "</div>";
@@ -2972,12 +3034,13 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     doc.supplements = state.supp.filter(function (x) { return SK.some(function (k) { return String(x[k] || "").trim(); }); }).map(function (x) { var o = {}; SK.forEach(function (k) { o[k] = String(x[k] || "").trim(); }); return o; });
     doc.createdAt = Date.now();
     var prev = state.media.filter(function (x) { return x.id === id; })[0];
-    doc.photos = prev && Array.isArray(prev.photos) ? prev.photos.slice() : [];
+    doc.photos = state.editingMedia === id ? (state.mKeep || []).slice() : prev && Array.isArray(prev.photos) ? prev.photos.slice() : [];
     if (prev && prev.finished) { doc.finished = true; doc.finishedDate = prev.finishedDate || ""; }
     try {
       if (state.pending.length && state.assets) {
+        var newNames = newPhotoNames($("m_id").value, doc.photos, state.pending.length);
         for (var i = 0; i < state.pending.length; i++) {
-          var p = state.pending[i], nm = [slug(id), p.kind, "bottle", doc.photos.length + 1].join("_") + ".jpg";
+          var p = state.pending[i], nm = newNames[i];
           var up = await state.assets.upload(new File([p.blob], nm, { type: "image/jpeg" }));
           doc.photos.push({ url: up.url, name: nm });
         }
@@ -3013,7 +3076,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
       var m = state.media.filter(function (x) { return x.id === b.dataset.medit; })[0]; if (!m) return;
       Object.keys(M).forEach(function (k) { var v = k === "id" ? m.id : m[k]; $(M[k]).value = v == null ? "" : v; });
       state.supp = suppsOf(m); if (!state.supp.length) state.supp = [suppBlank()]; renderSupp();
-      state.editingMedia = m.id; $("m_id").readOnly = true; $("mediaFormTitle").textContent = "Edit media batch"; $("cancelMedia").hidden = false;
+      state.editingMedia = m.id; state.mKeep = Array.isArray(m.photos) ? m.photos.slice() : []; state.pending = []; renderMPhotos(); $("m_id").readOnly = true; $("mediaFormTitle").textContent = "Edit media batch"; $("cancelMedia").hidden = false;
       $("mediaForm").scrollIntoView({ behavior: "smooth", block: "start" });
     } else if (b.dataset.mdel) {
       if (b.dataset.armed) { state.db.doc("media/" + b.dataset.mdel).delete(); return; }
@@ -3100,7 +3163,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     if (!keys.length) ps.addRow(["No protocols were recorded in the log entries."]);
     keys.forEach(function (k) {
       var u = uses[k], p = state.protocols.filter(function (x) { return x.id === u.id; })[0], ds = u.rows.map(function (e) { return e.date || ""; }).filter(Boolean).sort();
-      var steps = p ? String(p.steps || "").split(/\r?\n/).filter(function (x) { return x.trim(); }).map(function (x, i) { return /^\s*\d+[.)]/.test(x) ? x.trim() : (i + 1) + ". " + x.trim(); }).join("\n") : "(this protocol is no longer saved in the app)";
+      var steps = p ? String(p.steps || "").split(/\r?\n/).filter(function (x) { return x.trim(); }).map(function (x, i) { return stepTableText(/^\s*\d+[.)](?!\d)/.test(x) ? x.trim() : (i + 1) + ". " + x.trim()); }).join("\n") : "(this protocol is no longer saved in the app)";
       var row = ps.addRow([p ? p.title : u.name, p ? p.purpose : null, p ? (p.line || "All cell lines") : null, p ? p.version : null, u.rows.length, ds[0] || null, ds[ds.length - 1] || null, steps || null, p && (p.files || []).length ? p.files.map(function (f) { return f.name; }).join(", ") : null]);
       row.getCell(8).alignment = { wrapText: true, vertical: "top" };
       if (p) (p.files || []).forEach(function (f) { pFileJobs.push({ url: f.url, path: "protocol_files/" + safeName(p.title) + "/" + safeName(f.name) }); });
@@ -3169,7 +3232,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     });
     groups.forEach(function (g) {
       var ws = wb.addWorksheet(sheetName(g.name), { views: [{ state: "frozen", ySplit: 1 }] });
-      var cols = ["Date", "Passage #", "Action", "Split ratio", "Flasks seeded (total)", "Flask types", "Coating", "Coating expiry", "Rinse reagent", "Dissociation reagent", "Dissociation brand", "Dissociation cat #", "Dissociation expiry", "Dissociation concentration", "Dissociation volume (mL)", "Incubation temp (\u00b0C)", "Incubation duration (min)", "Count 1 (cells/mL)", "Count 2 (cells/mL)", "Average count (yours)", "Calculated average", "Volume of cells added (mL)", "Cells seeded (yours)", "Calculated cells seeded", "Working", "Media batch", "Confluence (%)", "Mycoplasma check", "Notes", "Photo", "Vial frozen on", "Freezing media", "Frozen by", "Freezing media expiry", "Thaw media added (mL)", "Centrifuge speed", "Centrifuge duration (min)", "Vial ID", "Media volume added (mL)"];
+      var cols = ["Date", "Passage #", "Action", "Split ratio", "Flasks seeded (total)", "Flask types", "Coating", "Coating expiry", "Rinse reagent", "Dissociation reagent", "Dissociation brand", "Dissociation cat #", "Dissociation expiry", "Dissociation concentration", "Dissociation volume (mL)", "Incubation temp (\u00b0C)", "Incubation duration (min)", "Count 1 (cells/mL)", "Count 2 (cells/mL)", "Average count (yours)", "Calculated average", "Volume of cells added (mL)", "Cells seeded (yours)", "Calculated cells seeded", "Working", "Media batch ID", "Confluence (%)", "Mycoplasma check", "Notes", "Photo", "Vial frozen on", "Freezing media", "Frozen by", "Freezing media expiry", "Thaw media added (mL)", "Centrifuge speed", "Centrifuge duration (min)", "Vial ID", "Media volume added (mL)"];
       var clabels = [];
       g.rows.forEach(function (e) { (e.custom || []).forEach(function (c) { var L = c.label + (c.unit ? " (" + c.unit + ")" : ""); if (clabels.indexOf(L) < 0) clabels.push(L); }); });
       var widths = [12, 10, 10, 10, 12, 22, 14, 14, 16, 20, 16, 14, 14, 16, 14, 14, 14, 16, 16, 18, 16, 18, 16, 16, 46, 14, 12, 16, 40, 34, 14, 22, 16, 16, 16, 16, 16, 16, 16];
@@ -3226,7 +3289,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     renderTabs(); empty();
     if (!window.claude || !window.claude.use) { setStatus("Saved data is not available in this view."); return; }
     var got = await Promise.all([window.claude.use("db"), window.claude.use("assets"), window.claude.use("downloads"), window.claude.use("sample")]);
-    state.db = got[0]; state.assets = got[1]; state.downloads = got[2];
+    state.db = got[0]; state.assets = got[1]; state.downloads = got[2]; try { renderMPhotos(); } catch (e) {}
     if (got[3]) {
       try { var lim = await got[3].limits(); if (lim && lim.images) { state.sample = got[3]; state.maxImages = lim.images.maxCount || 4; $("scanBox").hidden = false; $("dissScan").hidden = false; document.querySelectorAll(".sampleonly").forEach(function (el) { el.hidden = false; }); updateThawHint(); renderSupp(); if (state.tab === PROTO) renderProtocols(); } } catch (e) {}
     }
