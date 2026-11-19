@@ -9,16 +9,40 @@ A web page for logging cell culture work: thawing, passaging, media changes and 
 1. Open the link above in any browser, on a phone or a computer.
 2. You don't need an account, a sign-in or anything to install.
 
-### Optional: put it on your phone's home screen
+### Optional: install it as an app
 
 - **iPhone (Safari):** tap the Share button, then **Add to Home Screen**.
 - **Android (Chrome):** tap the **⋮** menu, then **Add to Home screen** or **Install app**.
+- **Mac (Safari):** **File → Add to Dock**.
+- **Mac or Windows (Chrome):** the install icon at the right of the address bar, or **⋮ → Cast, save and share → Install page as app**.
 
 The icon opens it like an app. It keeps working without internet.
+
+**The installed app and the browser keep separate logs.** On an iPhone or a Mac, an app added from Safari doesn't share its log with Safari tabs. Entries made in one don't show in the other. Pick one way of opening it and stick to it. To move your log from one to the other, use **Export backup** in one and **Restore a backup** in the other.
+
+**Getting updates:** the app updates itself when it opens with internet. If an app window has been open for a while, reload it (**⌘R** on a Mac, or close and reopen the app on a phone).
 
 ## Protocols
 
 The **Protocols** tab shows the lab's protocols, grouped by cell line. Each cell line starts folded: tap its name to see its protocols, and tap again to fold it. Each protocol links to its original file. When the lab adds or changes a protocol, it shows up the next time you open the page with internet. You don't need to download anything again.
+
+- **Cells to seed:** each protocol with a seeding density shows the cells to seed for every flask, dish and plate. Growth areas differ by brand: tap an area (in cm²) to change it for that protocol only, and its numbers are worked out again. Other protocols keep their own areas. **reset** puts the usual area back.
+- **What I tested:** under the cells to seed, press **+ Note what I tested** to record a seeding you tried: the flask or dish, the number of cells, the date, and notes (for example "use this to let them grow for 5 days"). It shows the cells/cm² (using the area at the time you saved it) and whether that's below, in or above the protocol's range. These notes are also in the protocol's PDF.
+
+## Your own protocol versions and notes
+
+- **Editing a protocol** (Edit, change it, Save) makes a new, dated version, for example "v2 (2026-11-19)". The old one is kept under **Earlier versions**, and **Use this version** brings any of them back.
+- **Your version stays yours.** Edits are saved only in your app, so each person can keep the way they actually do it. If the lab later updates that protocol on the site, your version stays in use; the lab's new version appears under Earlier versions with a note, and **Use this version** switches to it.
+- **Notes:** each protocol has a dated Notes list. Press **+ Add a note** (today's date is filled in; change it if needed). The app also adds dated notes by itself when you make a new version or change a growth area.
+- Notes, versions, areas and tested seedings are all in **Export backup**, and notes are in the protocol's PDF.
+
+## Flask areas in each entry
+
+When you add flasks to an entry, each flask type gets a box with its growth area (cm²), filled in from the protocol you picked. If your flasks are a different brand, type the right area. The entry keeps that area, so the cells to seed are worked out from it, and the log and Excel file show it, for example "2 × T75 (72 cm²)".
+
+## Notes on each entry
+
+Every entry has a **Notes** box near the top. Use it while you work for anything that went wrong or that you tried differently. Tick **Flag this entry** to make it stand out: flagged entries are marked ⚠ in the log, the calendar and the Excel file.
 
 ## Where your log is saved
 
@@ -40,7 +64,7 @@ Scroll to the very bottom of the page. You'll find four buttons there.
 
 Saves a copy of your whole log as one file, for example `cell-culture-backup-2026-11-18_1430.json`.
 
-- It includes all your entries, cell lines, defaults, experiments, media, protocols and attached photos.
+- It includes all your entries, cell lines, defaults, experiments, media and attached photos, and all your protocols with their versions, notes, growth areas and tested seedings.
 - Your log in the browser isn't changed.
 - The file is a snapshot of that moment. Export again to include newer entries.
 - **On a phone,** it opens the phone's share menu. Tap **Drive** (Android) or **Save to Files**, then **Google Drive** (iPhone), to put it straight into your Google Drive.

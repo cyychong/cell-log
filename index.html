@@ -762,6 +762,17 @@ window.CCL_GOOGLE_CLIENT_ID = "";
   .seedt { border-collapse: collapse; font-size: 13px; margin-top: 6px; width: 100%; }
   .seedt td { padding: 3px 8px 3px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
   .seedt td:last-child { text-align: right; white-space: nowrap; padding-right: 0; }
+  .areaIn { width: 4.6em; padding: 1px 4px; font: inherit; font-size: 12px; border: 1px dashed var(--line); border-radius: 5px; background: transparent; color: inherit; text-align: right; }
+  .areaIn:focus { border-style: solid; outline: none; border-color: var(--accent, #2bb39f); }
+  .areaIn.changed { border-style: solid; }
+  .pnotes { margin-top: 8px; font-size: 13px; } .pnotes > summary { cursor: pointer; font-weight: 600; } .pver { margin: 4px 0 4px 12px; } .pver > summary { cursor: pointer; }
+  .stests { margin-top: 10px; border-top: 1px solid var(--line); padding-top: 8px; font-size: 13px; }
+  .stest { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; padding: 4px 0; border-bottom: 1px dotted var(--line); }
+  .stest .grow { flex: 1 1 220px; }
+  .stag { font-size: 11px; padding: 1px 6px; border-radius: 9px; border: 1px solid var(--line); white-space: nowrap; }
+  .stag.out { border-color: #d39a2b; color: #d39a2b; }
+  .stform { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin-top: 8px; }
+  .stform .span2 { grid-column: 1 / -1; }
   .pedit textarea { font-family: inherit; font-size: 13px; line-height: 1.45; }
   .pdefs { margin-top: 8px; border-top: 1px dashed var(--line); padding-top: 8px; }
   .pcard ol { margin: 8px 0 4px 20px; padding: 0; font-size: 13px; }
@@ -790,6 +801,9 @@ window.CCL_GOOGLE_CLIENT_ID = "";
   .frow .fname { min-width: 90px; font-weight: 500; }
   .frow button { min-width: 34px; padding: 5px 10px; }
   .frow .fn { min-width: 24px; text-align: center; font-size: 16px; }
+  .frow { flex-wrap: wrap; }
+  .farea { display: flex !important; flex-direction: row !important; align-items: center; gap: 4px; font-size: 13px; color: var(--muted); }
+  .farea input { width: 5em; padding: 4px 6px; text-align: right; }
   .fother { display: flex; gap: 6px; max-width: 320px; }
   details.panel > summary { cursor: pointer; font-size: 14px; }
   details.panel > summary .sub { margin-left: 8px; }
@@ -799,7 +813,12 @@ window.CCL_GOOGLE_CLIENT_ID = "";
   table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
   th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; vertical-align: top; }
   th { font-size: 12px; font-weight: 600; color: var(--muted); background: var(--bg); position: sticky; top: 0; }
-  td.notes { white-space: normal; min-width: 180px; max-width: 320px; }
+  td.notes { white-space: pre-wrap; min-width: 180px; max-width: 320px; }
+  .notesbox textarea { width: 100%; box-sizing: border-box; min-height: 3.2em; resize: vertical; font: inherit; }
+  .flagline { display: flex !important; flex-direction: row !important; gap: 8px; align-items: center; font-size: 13px; margin-top: 6px; }
+  .flagline input { width: auto; margin: 0; }
+  .flagtag { display: inline-block; font-size: 11px; font-weight: 600; padding: 1px 6px; border-radius: 9px; border: 1px solid #d39a2b; color: #d39a2b; margin-right: 4px; white-space: nowrap; }
+  tr.flagged td:first-child { box-shadow: inset 3px 0 0 #d39a2b; }
   td.ok { background: var(--ok-bg); color: var(--ok-fg); }
   td.bad { background: var(--bad-bg); color: var(--bad-fg); }
   td small { display: block; font-size: 11px; }
@@ -818,12 +837,15 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     table, tbody { display: block; }
     thead { display: none; }
     tr { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; border: 1px solid var(--line); border-radius: 8px; padding: 10px; margin-bottom: 10px; }
+    td.notes { white-space: pre-wrap !important; }
     td, td.calc, td.notes { display: block; border: 0; padding: 0; white-space: normal; min-width: 0; max-width: none; overflow-wrap: anywhere; font-size: 13px; }
     td:empty { display: none; }
     td::before { content: attr(data-label); display: block; font-size: 11px; color: var(--muted); }
     td.calc, td.notes, td.photos, td:last-child { grid-column: 1 / -1; }
     td.ok, td.bad { padding: 4px 6px; border-radius: 4px; }
     td:last-child::before { content: none; }
+    .seedt tr { display: grid; grid-template-columns: 1fr; gap: 2px; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; padding: 6px 0; margin: 0; }
+    .seedt td, .seedt td:last-child { text-align: left; white-space: normal; }
   }
 </style>
 
@@ -913,6 +935,10 @@ window.CCL_GOOGLE_CLIENT_ID = "";
             <span class="hint" id="thawHint"></span>
           </label>
           <label>Split ratio<input id="f_split" placeholder="1:5"></label>
+          <div class="notesbox full">
+            <label>Notes <span class="sub">what went wrong, anything you tried differently, anything else</span><textarea id="f_notes" rows="2" placeholder="e.g. Trypsin left 8 min instead of 5; cells looked clumpy"></textarea></label>
+            <label class="flagline"><input type="checkbox" id="f_flag"> Flag this entry: something went wrong or I tried something new</label>
+          </div>
           <div class="sect" id="customSect" hidden>Protocol fields</div>
           <div class="full" id="customFields" hidden></div>
           <div class="sect thaw" hidden>Thaw <span class="sub">no counts or trypsinization for a thaw</span></div>
@@ -965,7 +991,6 @@ window.CCL_GOOGLE_CLIENT_ID = "";
           <label>Mycoplasma check
             <select id="f_myco"><option value="">Choose</option><option>Negative</option><option>Positive</option><option>Not done</option></select>
           </label>
-          <label class="span2">Notes<input id="f_notes"></label>
           <label id="photoField">Photo<input id="f_photo" type="file" accept="image/*"></label>
           <label id="photoDescField">What the photo shows<input id="f_photoDesc" placeholder="confluence"></label>
         </div>
@@ -1162,23 +1187,93 @@ window.CCL_GOOGLE_CLIENT_ID = "";
   var AREA0 = { "T25": 25, "T75": 75, "T175": 175, "6-well": 9.5, "12-well": 3.8, "24-well": 1.9, "96-well": 0.32, "35 mm dish": 9, "6 cm dish": 21, "10 cm dish": 55, "15 cm dish": 145, "150 cm2 dish": 150 };
   var WELLS = { "6-well": 6, "12-well": 12, "24-well": 24, "48-well": 48, "96-well": 96 };
   state.areas = Object.assign({}, AREA0);
-  function areaOf(t) { var a = Number(state.areas[t]); return a > 0 ? a : null; }
-  function unitArea(t) { var a = areaOf(t); return a == null ? null : a * (WELLS[t] || 1); }
+  // A protocol can set its own areas (brands differ); otherwise the general areas are used.
+  function ownArea(p, t) { var v = p && p.areas ? Number(p.areas[t]) : NaN; return v > 0 ? v : null; }
+  function areaOf(t, p) { var o = ownArea(p, t); if (o) return o; var a = Number(state.areas[t]); return a > 0 ? a : null; }
+  function unitArea(t, p) { var a = areaOf(t, p); return a == null ? null : a * (WELLS[t] || 1); }
   function cellsTxt(n) { return n == null || !isFinite(n) ? "" : Number(Number(n).toPrecision(3)).toLocaleString("en-US"); }
   function seedOf(p) { var a = num(p && p.seedMin), b = num(p && p.seedMax); if (a == null && b == null) return null; if (a == null) a = b; if (b == null) b = a; return { min: Math.min(a, b), max: Math.max(a, b), note: (p && p.seedNote) || "" }; }
   function rangeTxt(a, b) { return cellsTxt(a) === cellsTxt(b) ? cellsTxt(a) : cellsTxt(a) + " \u2013 " + cellsTxt(b); }
   // Rows of cells to seed for each flask type, from a seeding density in cells/cm².
-  function seedRows(sd) {
-    var types = FLASK_TYPES.concat(Object.keys(state.areas).filter(function (k) { return FLASK_TYPES.indexOf(k) < 0; }));
-    return types.filter(function (t) { return areaOf(t); }).map(function (t) {
-      var a = areaOf(t), w = WELLS[t];
-      return { type: t, area: w ? a + " cm² per well" : a + " cm²", cells: w ? rangeTxt(sd.min * a, sd.max * a) + " per well (" + rangeTxt(sd.min * a * w, sd.max * a * w) + " per plate)" : rangeTxt(sd.min * a, sd.max * a) };
+  function seedRows(sd, p) {
+    var types = FLASK_TYPES.concat(Object.keys(state.areas).concat(Object.keys((p && p.areas) || {})).filter(function (k, i, arr) { return FLASK_TYPES.indexOf(k) < 0 && arr.indexOf(k) === i; }));
+    return types.filter(function (t) { return areaOf(t, p); }).map(function (t) {
+      var a = areaOf(t, p), w = WELLS[t];
+      return { type: t, a: a, w: w, area: w ? a + " cm² per well" : a + " cm²", cells: w ? rangeTxt(sd.min * a, sd.max * a) + " per well (" + rangeTxt(sd.min * a * w, sd.max * a * w) + " per plate)" : rangeTxt(sd.min * a, sd.max * a) };
     });
   }
   function seedTable(p) {
-    var sd = seedOf(p); if (!sd) return "";
-    return '<details class="seedbox" open><summary>Cells to seed per flask (' + esc(rangeTxt(sd.min, sd.max)) + " cells/cm²)</summary>" + (sd.note ? '<div class="sub" style="margin-top:4px">Protocol says: ' + esc(sd.note) + "</div>" : "") +
-      '<table class="seedt">' + seedRows(sd).map(function (r) { return "<tr><td><b>" + esc(r.type) + '</b> <span class="sub">' + esc(r.area) + "</span></td><td>" + esc(r.cells) + "</td></tr>"; }).join("") + "</table></details>";
+    var sd = seedOf(p), tests = Array.isArray(p.seedTests) ? p.seedTests : [];
+    if (!sd && !tests.length && p.purpose !== "Passage" && p.purpose !== "Thaw") return "";
+    var head = sd ? "Cells to seed per flask (" + esc(rangeTxt(sd.min, sd.max)) + " cells/cm²)" : "Cells to seed";
+    return '<details class="seedbox"' + (sd || tests.length ? " open" : "") + "><summary>" + head + "</summary>" + (sd && sd.note ? '<div class="sub" style="margin-top:4px">Protocol says: ' + esc(sd.note) + "</div>" : "") +
+      (sd ? '<table class="seedt">' + seedRows(sd, p).map(function (r) {
+        var changed = !!ownArea(p, r.type), gen = areaOf(r.type);
+        return "<tr><td><b>" + esc(r.type) + '</b> <span class="sub"><input class="areaIn' + (changed ? " changed" : "") + '" data-areaedit="' + esc(r.type) + '" data-areap="' + esc(p.id) + '" inputmode="decimal" value="' + esc(r.a) + '" aria-label="Growth area of ' + esc(r.type) + (r.w ? " per well" : "") + ' in cm²" title="Change this for your brand"> cm²' + (r.w ? " per well" : "") + (changed ? ' <button type="button" class="small" data-areareset="' + esc(r.type) + '" data-areap="' + esc(p.id) + '" title="Back to the usual ' + esc(gen == null ? "" : gen) + ' cm²">reset</button>' : "") + "</span></td><td>" + esc(r.cells) + "</td></tr>";
+      }).join("") + '</table><div class="sub" style="margin-top:4px">Growth areas differ by brand. Change an area above for this protocol only, and its cells to seed are worked out again. Other protocols keep their own areas.</div>' : "") +
+      seedTestsHtml(p, sd) + "</details>";
+  }
+  // Dated notes on a protocol. Some are added by the app (new version, area changed).
+  function notesHtml(p) {
+    var ns = (p.notesLog || []).slice().sort(function (a, b) { return String(b.date || "").localeCompare(String(a.date || "")) || (b.savedAt || 0) - (a.savedAt || 0); });
+    var f = state.pnForm && state.pnForm.pid === p.id ? state.pnForm : null;
+    var h = '<details class="pnotes"' + (ns.length || f ? " open" : "") + "><summary>Notes" + (ns.length ? " (" + ns.length + ")" : "") + "</summary>";
+    h += ns.map(function (x) {
+      return '<div class="stest"><span class="grow"><b>' + esc(x.date || "") + "</b> \u00b7 " + esc(x.text || "") + (x.auto ? ' <span class="sub">(added by the app)</span>' : "") + "</span>" +
+        '<span><button type="button" class="small" data-pnedit="' + esc(p.id) + '" data-pni="' + esc(x.id) + '">Edit</button> <button type="button" class="small" data-pndel="' + esc(p.id) + '" data-pni="' + esc(x.id) + '">Delete</button></span></div>';
+    }).join("");
+    if (f) h += '<div class="stform" data-pnform="' + esc(p.id) + '"><label>Date<input data-pnf="date" type="date" value="' + esc(f.date || today()) + '"></label>' +
+      '<label class="span2">Note<textarea data-pnf="text" rows="2" placeholder="e.g. Switched to Corning T75s">' + esc(f.text || "") + "</textarea></label>" +
+      '<div class="span2"><button type="button" class="primary small" data-pnsave="' + esc(p.id) + '">' + (f.id ? "Save changes" : "Save note") + '</button> <button type="button" class="small" data-pncancel="1">Cancel</button> <span data-pnmsg class="sub"></span></div></div>';
+    else h += '<div style="margin-top:6px"><button type="button" class="small" data-pnadd="' + esc(p.id) + '">+ Add a note</button></div>';
+    return h + "</details>";
+  }
+  function versionsHtml(p) {
+    var vs = (p.versions || []).slice().reverse(); if (!vs.length) return "";
+    return '<details class="pnotes"><summary>Earlier versions (' + vs.length + ")</summary>" + vs.map(function (v) {
+      var sd = seedOf(v);
+      return '<details class="pver"><summary><b>' + esc(v.version || "Earlier") + "</b>" + (v.date && String(v.version || "").indexOf(v.date) < 0 ? " \u00b7 " + esc(v.date) : "") + (v.title && v.title !== p.title ? " \u00b7 " + esc(v.title) : "") + (v.fromSite ? ' <span class="sub">(lab site)</span>' : "") + "</summary>" + stepList(v.steps) + (sd ? '<div class="sub">Seeding: ' + esc(rangeTxt(sd.min, sd.max)) + " cells/cm²</div>" : "") +
+        '<div style="margin:4px 0"><button type="button" class="small" data-puse="' + esc(p.id) + '" data-pvi="' + (p.versions.length - 1 - vs.indexOf(v)) + '">Use this version</button></div></details>';
+    }).join("") + "</details>";
+  }
+  // Seeding the person tried themselves for this protocol, e.g. outside the protocol's range.
+  function seedTestsHtml(p, sd) {
+    var tests = (Array.isArray(p.seedTests) ? p.seedTests : []).slice().sort(function (a, b) { return String(b.date || "").localeCompare(String(a.date || "")); });
+    var h = '<div class="stests"><b>What I tested</b>';
+    h += tests.length ? tests.map(function (t) {
+      var a = num(t.area) || areaOf(t.type, p), dens = a && num(t.cells) != null ? num(t.cells) / a : null, tag = "";
+      if (dens != null && sd) tag = dens < sd.min * 0.995 ? '<span class="stag out">below range</span>' : dens > sd.max * 1.005 ? '<span class="stag out">above range</span>' : '<span class="stag">in range</span>';
+      return '<div class="stest"><span class="grow">' + esc(t.date || "") + " \u00b7 <b>" + esc(t.type || "") + "</b>: " + esc(cellsTxt(num(t.cells))) + (WELLS[t.type] ? " cells per well" : " cells") +
+        (dens != null ? ' <span class="sub">(' + esc(cellsTxt(dens)) + " cells/cm² at " + esc(a) + " cm²" + (WELLS[t.type] ? " per well" : "") + ")</span>" : "") + " " + tag + (t.notes ? '<br><span class="sub">' + esc(t.notes) + "</span>" : "") + "</span>" +
+        '<span><button type="button" class="small" data-stedit="' + esc(p.id) + '" data-sti="' + esc(t.id) + '">Edit</button> <button type="button" class="small" data-stdel="' + esc(p.id) + '" data-sti="' + esc(t.id) + '">Delete</button></span></div>';
+    }).join("") : '<div class="sub" style="margin-top:4px">Nothing yet. Note any seeding you tried, e.g. outside the range above.</div>';
+    var f = state.stForm && state.stForm.pid === p.id ? state.stForm : null;
+    if (f) {
+      h += '<div class="stform" data-stform="' + esc(p.id) + '">' +
+        '<label>Flask / dish<input data-stf="type" list="flasks" value="' + esc(f.type || "") + '" placeholder="e.g. T75"></label>' +
+        '<label><span data-stcl>' + (WELLS[f.type] ? "Cells per well" : "Cells per flask / dish") + '</span><input data-stf="cells" inputmode="decimal" value="' + esc(f.cells || "") + '" placeholder="e.g. 5e5"></label>' +
+        '<label>Date tested<input data-stf="date" type="date" value="' + esc(f.date || today()) + '"></label>' +
+        '<label class="span2">Notes<input data-stf="notes" value="' + esc(f.notes || "") + '" placeholder="e.g. use this to let them grow for 5 days"></label>' +
+        '<div class="span2" data-stlive class="sub"></div>' +
+        '<div class="span2"><button type="button" class="primary small" data-stsave="' + esc(p.id) + '">' + (f.id ? "Save changes" : "Save") + '</button> <button type="button" class="small" data-stcancel="1">Cancel</button> <span data-stmsg class="sub"></span></div></div>';
+    } else h += '<div style="margin-top:6px"><button type="button" class="small" data-stadd="' + esc(p.id) + '">+ Note what I tested</button></div>';
+    return h + "</div>";
+  }
+  function stLive(box) {
+    if (!box) return; var f = state.stForm || {}, out = box.querySelector("[data-stlive]"), cl = box.querySelector("[data-stcl]");
+    if (cl) cl.textContent = WELLS[f.type] ? "Cells per well" : "Cells per flask / dish";
+    if (!out) return; var pp = state.protocols.filter(function (x) { return x.id === f.pid; })[0], a = areaOf(f.type, pp), c = num(f.cells);
+    out.className = "span2 sub";
+    out.textContent = !f.type ? "" : !a ? "No growth area for " + f.type + " yet. Add it under Flask growth areas to see cells/cm²." : c == null ? "" : "= " + cellsTxt(c / a) + " cells/cm² (" + f.type + ": " + a + " cm²" + (WELLS[f.type] ? " per well" : "") + ")";
+  }
+  // Saves one protocol's own area (null = use the usual area again). The whole areas object is written, with null for removed ones, so a merge cannot bring an old value back.
+  async function saveProtoArea(p, t, v) {
+    if (!state.db) return;
+    var old = areaOf(t, p), gen = areaOf(t), a = Object.assign({}, p.areas || {}); a[t] = v;
+    var nl = (p.notesLog || []).slice(), unit = WELLS[t] ? " cm² per well" : " cm²";
+    if (old !== (v == null ? gen : v)) nl.push({ id: "n" + Date.now().toString(36), date: today(), text: v == null ? t + " growth area back to the usual " + gen + unit + " (was " + old + unit + ")." : t + " growth area set to " + v + unit + " (was " + old + unit + ").", auto: true, savedAt: Date.now() });
+    p.areas = a; p.notesLog = nl; renderProtocols();
+    try { await state.db.doc("protocols/" + p.id).update({ areas: a, notesLog: nl }); } catch (e) { setStatus("Could not save the area: " + (e && e.message ? e.message : "try again")); }
   }
   function renderAreas() {
     var g = $("areaGrid"); if (!g) return;
@@ -1186,32 +1281,43 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     g.innerHTML = types.map(function (t) { return "<label>" + esc(t) + (WELLS[t] ? " (cm² per well)" : " (cm²)") + '<input data-area="' + esc(t) + '" inputmode="decimal" value="' + esc(state.areas[t] == null ? "" : state.areas[t]) + '"></label>'; }).join("");
   }
   function flaskTotal(list) { return list.reduce(function (n, f) { return n + f.n; }, 0); }
-  function flaskText(list) { return list.map(function (f) { return f.n + " \u00d7 " + f.type; }).join(", "); }
+  function flaskText(list) { return list.map(function (f) { return f.n + " \u00d7 " + f.type + (num(f.area) > 0 ? " (" + num(f.area) + " cm\u00b2" + (WELLS[f.type] ? " per well" : "") + ")" : ""); }).join(", "); }
   function flasksOf(e) {
-    if (Array.isArray(e.flasks)) return e.flasks.map(function (f) { return { type: f.type, n: f.n }; });
+    if (Array.isArray(e.flasks)) return e.flasks.map(function (f) { var o = { type: f.type, n: f.n }; if (num(f.area) > 0) o.area = num(f.area); return o; });
     var s = String(e.flask || "").trim(); if (!s) return [];
     return s.split(/\s*,\s*/).map(function (p) { var m = p.match(/^(\d+)\s*[x\u00d7]\s*(.+)$/i); return m ? { type: m[2], n: Number(m[1]) } : { type: p, n: 1 }; });
   }
-  function flaskWidget(root, onChange) {
+  // areaFor (entry form only): the growth area to fill in for a flask type, from the chosen protocol. Each row then has its own area box, saved with the entry.
+  function flaskWidget(root, onChange, areaFor) {
     var list = [];
     root.innerHTML = '<div class="chips"></div><div class="frows"></div><div class="fother"><input list="flasks" placeholder="Other type, e.g. 24-well" aria-label="Other flask type"><button type="button" class="small">Add</button></div>';
     var chips = root.querySelector(".chips"), rows = root.querySelector(".frows"), oth = root.querySelector(".fother input");
     function draw() {
       chips.innerHTML = FLASK_TYPES.map(function (t) { return '<button type="button" class="chip" data-add="' + esc(t) + '">+ ' + esc(t) + "</button>"; }).join("");
       rows.innerHTML = list.map(function (f) {
-        return '<div class="frow"><span class="fname">' + esc(f.type) + '</span><button type="button" data-d="-1" data-t="' + esc(f.type) + '" aria-label="One fewer ' + esc(f.type) + '">\u2212</button><b class="fn">' + f.n + '</b><button type="button" data-d="1" data-t="' + esc(f.type) + '" aria-label="One more ' + esc(f.type) + '">+</button></div>';
+        return '<div class="frow"><span class="fname">' + esc(f.type) + '</span><button type="button" data-d="-1" data-t="' + esc(f.type) + '" aria-label="One fewer ' + esc(f.type) + '">\u2212</button><b class="fn">' + f.n + '</b><button type="button" data-d="1" data-t="' + esc(f.type) + '" aria-label="One more ' + esc(f.type) + '">+</button>' +
+          (areaFor ? '<label class="farea"><input data-farea="' + esc(f.type) + '" inputmode="decimal" value="' + esc(f.area == null ? "" : f.area) + '" placeholder="?" aria-label="Growth area of ' + esc(f.type) + ' in cm²"> cm²' + (WELLS[f.type] ? " per well" : "") + (f.own ? ' <button type="button" class="small" data-fareareset="' + esc(f.type) + '">from protocol</button>' : "") + "</label>" : "") + "</div>";
       }).join("") || '<div class="sub">Tap a flask type to add it. Tap it again for each extra flask of that type.</div>';
       if (onChange) onChange(list);
     }
     function add(type, d) {
       type = String(type || "").trim(); if (!type) return;
       var f = list.filter(function (x) { return x.type.toLowerCase() === type.toLowerCase(); })[0];
-      if (f) f.n += d; else if (d > 0) list.push({ type: type, n: d });
+      if (f) f.n += d; else if (d > 0) list.push(fill({ type: type, n: d }));
       list = list.filter(function (x) { return x.n > 0; });
       draw();
     }
+    function fill(f) { if (areaFor && !f.own) { var a = areaFor(f.type); f.area = a == null ? null : a; } return f; }
+    if (areaFor) root.addEventListener("input", function (ev) {
+      var el = ev.target; if (!el.dataset || el.dataset.farea == null) return;
+      var f = list.filter(function (x) { return x.type === el.dataset.farea; })[0]; if (!f) return;
+      var v = num(el.value); f.area = v > 0 ? v : null; f.own = true;
+      if (onChange) onChange(list);
+    });
+    if (areaFor) root.addEventListener("change", function (ev) { if (ev.target.dataset && ev.target.dataset.farea != null) draw(); });
     root.addEventListener("click", function (ev) {
       var b = ev.target.closest("button"); if (!b) return;
+      if (b.dataset.fareareset) { var fr = list.filter(function (x) { return x.type === b.dataset.fareareset; })[0]; if (fr) { fr.own = false; fill(fr); draw(); } return; }
       if (b.dataset.add) add(b.dataset.add, 1);
       else if (b.dataset.d) add(b.dataset.t, Number(b.dataset.d));
       else if (b.parentNode.classList.contains("fother")) { add(oth.value, 1); oth.value = ""; }
@@ -1219,11 +1325,15 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     oth.addEventListener("keydown", function (ev) { if (ev.key === "Enter") { ev.preventDefault(); add(oth.value, 1); oth.value = ""; } });
     draw();
     return {
-      get: function () { return list.map(function (f) { return { type: f.type, n: f.n }; }); },
-      set: function (l) { list = (l || []).filter(function (f) { return f && f.type && f.n > 0; }).map(function (f) { return { type: f.type, n: f.n }; }); draw(); }
+      get: function () { return list.map(function (f) { var o = { type: f.type, n: f.n }; if (areaFor && num(f.area) > 0) o.area = num(f.area); return o; }); },
+      // Saved entries keep the area they were logged with; new ones take it from the protocol.
+      set: function (l, keepAreas) { list = (l || []).filter(function (f) { return f && f.type && f.n > 0; }).map(function (f) { var o = { type: f.type, n: f.n }; if (keepAreas && num(f.area) > 0) { o.area = num(f.area); o.own = true; } return fill(o); }); draw(); },
+      // The protocol changed: fill in its areas, except where the person typed their own.
+      refresh: function () { if (!areaFor) return; var ch = false; list.forEach(function (f) { var o = f.area; fill(f); if (o !== f.area) ch = true; }); if (ch) draw(); }
     };
   }
-  var entryFl = flaskWidget($("entryFlasks"), function (l) { $("flaskTotal").textContent = l.length ? flaskTotal(l) + (flaskTotal(l) === 1 ? " flask: " : " flasks: ") + flaskText(l) : ""; if (typeof entryFl !== "undefined") try { renderPerFlask(); preCalc(); } catch (e) {} });
+  function entryProto() { return state.protocols.filter(function (x) { return x.id === $("f_protocol").value; })[0] || null; }
+  var entryFl = flaskWidget($("entryFlasks"), function (l) { $("flaskTotal").textContent = l.length ? flaskTotal(l) + (flaskTotal(l) === 1 ? " flask: " : " flasks: ") + flaskText(l) : ""; if (typeof entryFl !== "undefined") try { renderPerFlask(); preCalc(); } catch (e) {} }, function (t) { return areaOf(t, entryProto()); });
   var tplFl = flaskWidget($("tplFlasks"));
 
   function setStatus(t) { $("status").textContent = t || ""; }
@@ -1395,7 +1505,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
   }
   function onActionChange() {
     var act = $("f_action").value;
-    if (!state.editing) { var pid = protocolFor(act); $("f_protocol").value = pid || ((curLine() || {}).template || {}).protocol || ""; applyActionDefaults(act); try { preCalc(); } catch (e) {} }
+    if (!state.editing) { var pid = protocolFor(act); $("f_protocol").value = pid || ((curLine() || {}).template || {}).protocol || ""; applyActionDefaults(act); entryFl.refresh(); try { preCalc(); } catch (e) {} }
     renderCustomFields(customDef(act), null);
     updateThawHint();
   }
@@ -1447,7 +1557,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
       });
       var sd = seedOf(p);
       if (sd) {
-        var rows = seedRows(sd), need = 22 + rows.length * 6;
+        var rows = seedRows(sd, p), need = 22 + rows.length * 6;
         y += 5; if (y + need > H - M) { doc.addPage(); header(false); y = M + 2; }
         doc.setFont("helvetica", "bold"); doc.setFontSize(12.5); doc.text("Cells to seed per flask", M, y); y += 6;
         doc.setFont("helvetica", "normal"); doc.setFontSize(10.5); doc.text(pdfText("Seeding density: " + rangeTxt(sd.min, sd.max) + " cells/cm\u00b2"), M, y); y += 5.5;
@@ -1460,6 +1570,37 @@ window.CCL_GOOGLE_CLIENT_ID = "";
         });
         doc.setFontSize(11);
       }
+      var tests = (p.seedTests || []).slice().sort(function (a, b) { return String(b.date || "").localeCompare(String(a.date || "")); });
+      if (tests.length) {
+        y += 5; if (y + 16 > H - M) { doc.addPage(); header(false); y = M + 2; }
+        doc.setFont("helvetica", "bold"); doc.setFontSize(12.5); doc.text("What I tested", M, y); y += 6; doc.setFont("helvetica", "normal"); doc.setFontSize(10.5);
+        tests.forEach(function (t) {
+          var a = num(t.area) || areaOf(t.type, p), dens = a && num(t.cells) != null ? num(t.cells) / a : null;
+          var line = (t.date || "") + "  " + (t.type || "") + ": " + cellsTxt(num(t.cells)) + (WELLS[t.type] ? " cells per well" : " cells") + (dens != null ? " (" + cellsTxt(dens) + " cells/cm\u00b2 at " + a + " cm\u00b2" + (sd ? (dens < sd.min * 0.995 ? ", below range" : dens > sd.max * 1.005 ? ", above range" : ", in range") : "") + ")" : "");
+          var tl = doc.splitTextToSize(pdfText(line), tw), nl2 = t.notes ? doc.splitTextToSize(pdfText(t.notes), tw - 6) : [];
+          if (y + (tl.length + nl2.length) * 5 > H - M) { doc.addPage(); header(false); y = M + 2; }
+          doc.text(tl, M, y); y += tl.length * 5;
+          if (nl2.length) { doc.setTextColor(90); doc.text(nl2, M + 6, y); doc.setTextColor(0); y += nl2.length * 5; }
+          y += 1.5;
+        });
+        doc.setFontSize(11);
+      }
+      var pns = (p.notesLog || []).slice().sort(function (a, b) { return String(b.date || "").localeCompare(String(a.date || "")) || (b.savedAt || 0) - (a.savedAt || 0); });
+      if (pns.length) {
+        y += 5; if (y + 16 > H - M) { doc.addPage(); header(false); y = M + 2; }
+        doc.setFont("helvetica", "bold"); doc.setFontSize(12.5); doc.text("Notes", M, y); y += 6; doc.setFontSize(10.5);
+        pns.forEach(function (x) {
+          var tl2 = doc.splitTextToSize(pdfText(x.text), tw - 26); if (y + tl2.length * 5 > H - M) { doc.addPage(); header(false); y = M + 2; }
+          doc.setFont("helvetica", "bold"); doc.text(pdfText(x.date || ""), M, y); doc.setFont("helvetica", "normal"); doc.text(tl2, M + 26, y); y += tl2.length * 5 + 1.5;
+        });
+        doc.setFontSize(11);
+      }
+      if ((p.versions || []).length) {
+        y += 4; if (y + 12 > H - M) { doc.addPage(); header(false); y = M + 2; }
+        doc.setFontSize(9.5); doc.setTextColor(90);
+        var vt = doc.splitTextToSize(pdfText("Earlier versions: " + p.versions.slice().reverse().map(function (v) { return (v.version || "earlier") + (v.date && String(v.version || "").indexOf(v.date) < 0 ? " (" + v.date + ")" : ""); }).join("; ")), tw);
+        doc.text(vt, M, y); y += vt.length * 4.6; doc.setTextColor(0); doc.setFontSize(11);
+      }
       if ((p.files || []).length) { y += 4; if (y > H - M - 10) { doc.addPage(); header(false); y = M + 2; } doc.setFontSize(9.5); doc.setTextColor(90); doc.text(doc.splitTextToSize("Source files: " + pdfText(p.files.map(function (f) { return f.name; }).join(", ")), tw), M, y); doc.setTextColor(0); }
       var n = doc.getNumberOfPages();
       for (var i = 1; i <= n; i++) { doc.setPage(i); doc.setFontSize(9); doc.setTextColor(120); doc.text("Page " + i + " of " + n, W / 2, H - 9, { align: "center" }); }
@@ -1470,6 +1611,18 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     } catch (e) { if (btn) { btn.textContent = old; btn.disabled = false; } if (!(e && /cancel|declin|dismiss/i.test(String(e.code || e.message)))) readMsg("Could not make the PDF: " + (e && e.message ? e.message : "try again")); }
   }
   // On the web page: protocols the lab keeps in the site's protocols folder (protocols/protocols.json) are added to everyone's Protocols tab.
+  // A newer lab-site version replaces a protocol; anything edited on this device is kept under Earlier versions.
+  function k0() { return Math.random().toString(36).slice(2, 6); }
+  function siteVersions(cur) {
+    var v = (cur && cur.versions || []).slice();
+    if (cur && cur.edited) v.push({ version: cur.version || "", date: ymd(cur.updatedAt), title: cur.title || "", purpose: cur.purpose || "", line: cur.line || "", steps: cur.steps || "", seedMin: num(cur.seedMin), seedMax: num(cur.seedMax), seedNote: cur.seedNote || "", replacedAt: Date.now() });
+    return v;
+  }
+  function siteNotes(cur, p) {
+    var n = (cur && cur.notesLog || []).slice();
+    if (cur && cur.siteStamp) n.push({ id: "n" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), date: today(), text: "Updated from the lab site to version " + (p.version || "") + (cur.edited ? ". Your edited version " + (cur.version || "") + " is under Earlier versions." : "."), auto: true, savedAt: Date.now() });
+    return n;
+  }
   async function loadSiteProtocols() {
     if (!window.__localDb || !/^https?:$/.test(location.protocol) || !state.db) return;
     try {
@@ -1479,13 +1632,21 @@ window.CCL_GOOGLE_CLIENT_ID = "";
         var p = list[i] || {}, id = "site-" + (slug(p.id || p.title) || "protocol-" + i), stamp = JSON.stringify(p), cur = state.protocols.filter(function (x) { return x.id === id; })[0];
         ids.push(id);
         if (cur && cur.siteStamp === stamp) continue;
+        if (cur && cur.edited) {
+          // This person has their own version: keep it in use, and file the lab's new version under Earlier versions.
+          var lsd = p.seeding || {}, lv = { version: String(p.version || ""), date: String(p.updated || "").slice(0, 10), title: String(p.title || ""), purpose: PURPOSES.indexOf(p.purpose) >= 0 ? p.purpose : "Other", line: String(p.line || ""),
+            steps: (Array.isArray(p.steps) ? p.steps : String(p.steps || "").split(/\r?\n/)).map(function (x) { return String(x).trim(); }).filter(Boolean).map(function (x, k) { return (k + 1) + ". " + x.replace(/^\s*\d+[.)]\s*/, ""); }).join("\n"),
+            seedMin: num(lsd.min), seedMax: num(lsd.max), seedNote: String(lsd.note || ""), fromSite: true, replacedAt: Date.now() };
+          await state.db.doc("protocols/" + id).update({ siteStamp: stamp, versions: (cur.versions || []).concat([lv]), notesLog: (cur.notesLog || []).concat([{ id: "n" + Date.now().toString(36) + k0(), date: today(), text: "The lab site has a newer version (" + (lv.version || "no version") + "). Your version " + (cur.version || "") + " is still the one in use; the lab's is under Earlier versions.", auto: true, savedAt: Date.now() }]) });
+          n++; continue;
+        }
         var sd = p.seeding || {}, um = String(p.updated || "").match(/^(\d{4})-(\d{2})-(\d{2})/), up = um ? new Date(+um[1], +um[2] - 1, +um[3], 12).getTime() : NaN;
         await state.db.doc("protocols/" + id).set({
           title: String(p.title || "Protocol"), purpose: PURPOSES.indexOf(p.purpose) >= 0 ? p.purpose : "Other", line: String(p.line || ""), version: String(p.version || ""),
           steps: (Array.isArray(p.steps) ? p.steps : String(p.steps || "").split(/\r?\n/)).map(function (x) { return String(x).trim(); }).filter(Boolean).map(function (x, k) { return (k + 1) + ". " + x.replace(/^\s*\d+[.)]\s*/, ""); }).join("\n"),
           seedMin: num(sd.min), seedMax: num(sd.max), seedNote: String(sd.note || ""),
           files: (Array.isArray(p.files) ? p.files : []).map(function (f) { return { name: String(f), url: "protocols/" + encodeURIComponent(String(f)) }; }),
-          source: "site", siteStamp: stamp, createdAt: cur && cur.createdAt ? cur.createdAt : Date.now(), updatedAt: isNaN(up) ? Date.now() : up
+          seedTests: (cur && cur.seedTests) || [], areas: (cur && cur.areas) || {}, notesLog: siteNotes(cur, p), versions: siteVersions(cur), source: "site", siteStamp: stamp, createdAt: cur && cur.createdAt ? cur.createdAt : Date.now(), updatedAt: isNaN(up) ? Date.now() : up
         });
         n++;
         if (String(p.line || "").trim()) { var lk = String(p.line).trim(); (setUp[lk] = setUp[lk] || []).push(p); }
@@ -1522,11 +1683,12 @@ window.CCL_GOOGLE_CLIENT_ID = "";
       var g = groups[k].sort(protoSort);
       return '<details class="pgrp" data-pgrp="' + esc(k) + '"' + ((state.pOpen || {})[k] ? " open" : "") + '><summary class="pgroup">' + esc(k || "All cell lines") + '<span class="sub">' + g.length + (g.length === 1 ? " protocol" : " protocols") + "</span></summary>" + g.map(function (p) {
         var n = String(p.steps || "").split(/\r?\n/).filter(function (x) { return x.trim(); }).length;
-        return '<div class="pcard"><div class="pcardHead"><b>' + esc(p.title) + '</b><span class="sub">' + esc([p.purpose, p.version, "updated " + ymd(p.updatedAt || p.createdAt), p.source === "site" ? "from the lab site" : ""].filter(Boolean).join(" · ")) + '</span><span><button class="small" data-pedit="' + esc(p.id) + '">Edit</button> <button class="small" data-ppdf="' + esc(p.id) + '">PDF</button> <button class="small" data-pdel="' + esc(p.id) + '">Delete</button></span></div>' +
-          (n ? "<details><summary>" + n + (n === 1 ? " step" : " steps") + "</summary>" + stepList(p.steps) + "</details>" : "") + seedTable(p) +
+        return '<div class="pcard"><div class="pcardHead"><b>' + esc(p.title) + '</b><span class="sub">' + esc([p.purpose, p.version, "updated " + ymd(p.updatedAt || p.createdAt), p.source === "site" ? "from the lab site" : "", p.edited ? "your version" : ""].filter(Boolean).join(" · ")) + '</span><span><button class="small" data-pedit="' + esc(p.id) + '">Edit</button> <button class="small" data-ppdf="' + esc(p.id) + '">PDF</button> <button class="small" data-pdel="' + esc(p.id) + '">Delete</button></span></div>' +
+          (n ? "<details><summary>" + n + (n === 1 ? " step" : " steps") + "</summary>" + stepList(p.steps) + "</details>" : "") + seedTable(p) + notesHtml(p) + versionsHtml(p) +
           ((p.files || []).length ? '<div class="pfiles">' + fileLinks(p.files) + "</div>" : "") + "</div>";
       }).join("") + "</details>";
     }).join("") : '<div class="empty">No protocols yet. Read one above, or type one in the form.</div>';
+    if (state.stForm) stLive($("pList").querySelector("[data-stform]"));
     renderActionList();
     $("pReader").hidden = !state.sample;
     $("pFilesField").hidden = !state.assets;
@@ -1542,6 +1704,19 @@ window.CCL_GOOGLE_CLIENT_ID = "";
   }
   $("pCancel").onclick = resetProtoForm;
   // Each cell line's protocols start folded; remember which ones are open so a refresh of the list keeps them open.
+  $("pList").addEventListener("change", function (ev) {
+    var el = ev.target; if (!el.dataset || el.dataset.areaedit == null) return;
+    var v = num(el.value), t = el.dataset.areaedit, pa = state.protocols.filter(function (x) { return x.id === el.dataset.areap; })[0];
+    if (!pa) return;
+    if (v == null || !(v > 0)) { el.value = areaOf(t, pa); return; }
+    var gen = areaOf(t); saveProtoArea(pa, t, gen != null && v === gen ? null : v);
+  });
+  $("pList").addEventListener("keydown", function (ev) { if (ev.key === "Enter" && ev.target.dataset && ev.target.dataset.areaedit != null) ev.target.blur(); });
+  $("pList").addEventListener("input", function (ev) {
+    if (ev.target.dataset && ev.target.dataset.pnf && state.pnForm) { state.pnForm[ev.target.dataset.pnf] = ev.target.value; return; }
+    var el = ev.target; if (!el.dataset || !el.dataset.stf || !state.stForm) return;
+    state.stForm[el.dataset.stf] = el.value; if (el.dataset.stf === "type" || el.dataset.stf === "cells") stLive(el.closest("[data-stform]"));
+  });
   $("pList").addEventListener("toggle", function (ev) { var d = ev.target; if (!d.classList || !d.classList.contains("pgrp")) return; (state.pOpen = state.pOpen || {})[d.dataset.pgrp] = d.open; }, true);
   $("areaSave").onclick = async function () {
     if (!state.db) return; var a = {};
@@ -1550,18 +1725,38 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     catch (e) { $("areaMsg").textContent = "Could not save: " + (e && e.message ? e.message : "try again"); }
   };
   $("pFileList").addEventListener("click", function (ev) { var b = ev.target.closest("button"); if (b && b.dataset.prmf != null) { state.pEditFiles.splice(Number(b.dataset.prmf), 1); renderPFiles(); } });
+  // Editing a saved protocol's content makes a new, dated version. The old one is kept under "Earlier versions", and a dated note says what changed.
+  function stepsKey(t) { return String(t || "").split(/\r?\n/).map(function (x) { return x.replace(/^\s*\d+[.)]\s*/, "").trim(); }).filter(Boolean).join("\n"); }
+  function newVersion(prev, doc) {
+    ["source", "siteStamp", "siteId"].forEach(function (k) { if (prev[k] != null) doc[k] = prev[k]; });
+    doc.notesLog = (prev.notesLog || []).slice(); doc.versions = (prev.versions || []).slice();
+    var what = [];
+    if ((prev.title || "") !== doc.title) what.push("title");
+    if ((prev.purpose || "") !== doc.purpose) what.push("purpose");
+    if ((prev.line || "") !== doc.line) what.push("cell line");
+    if (stepsKey(prev.steps) !== stepsKey(doc.steps)) what.push("steps");
+    if (num(prev.seedMin) !== doc.seedMin || num(prev.seedMax) !== doc.seedMax) what.push("seeding density");
+    if (!what.length) return "";
+    var d = today(), was = prev.version || "v1";
+    doc.versions.push({ version: was, date: ymd(prev.updatedAt || prev.createdAt), title: prev.title || "", purpose: prev.purpose || "", line: prev.line || "", steps: prev.steps || "", seedMin: num(prev.seedMin), seedMax: num(prev.seedMax), seedNote: prev.seedNote || "", replacedAt: Date.now() });
+    if (doc.version === (prev.version || "")) doc.version = "v" + (doc.versions.length + 1) + " (" + d + ")";
+    doc.notesLog.push({ id: "n" + Date.now().toString(36), date: d, text: "New version " + doc.version + ": changed the " + what.join(", ") + ". Previous version: " + was + ".", auto: true, savedAt: Date.now() });
+    doc.edited = true;
+    return " Saved as new version " + doc.version + "; the old one is under Earlier versions.";
+  }
   $("protoForm").addEventListener("submit", async function (ev) {
     ev.preventDefault(); if (!state.db) return;
     var msg = $("pMsg"); msg.textContent = "Saving...";
     var prev = state.pEditing ? state.protocols.filter(function (p) { return p.id === state.pEditing; })[0] : null;
     var lname = $("p_line").value.trim(), lm = lineMatch(lname); if (lm) lname = lm.name;
-    var doc = { title: $("p_title").value.trim(), purpose: $("p_purpose").value, line: lname, version: $("p_version").value.trim(), seedMin: num($("p_seedMin").value), seedMax: num($("p_seedMax").value), seedNote: state.pSeedNote || (prev && prev.seedNote) || "", steps: $("p_steps").value.replace(/\s+$/, ""), files: (state.pEditFiles || []).slice(), createdAt: prev && prev.createdAt ? prev.createdAt : Date.now(), updatedAt: Date.now() };
+    var doc = { title: $("p_title").value.trim(), purpose: $("p_purpose").value, line: lname, version: $("p_version").value.trim(), seedMin: num($("p_seedMin").value), seedMax: num($("p_seedMax").value), seedNote: state.pSeedNote || (prev && prev.seedNote) || "", seedTests: (prev && prev.seedTests) || [], areas: (prev && prev.areas) || {}, notesLog: (prev && prev.notesLog) || [], versions: (prev && prev.versions) || [], steps: $("p_steps").value.replace(/\s+$/, ""), files: (state.pEditFiles || []).slice(), createdAt: prev && prev.createdAt ? prev.createdAt : Date.now(), updatedAt: Date.now() };
     try {
       var up = [].slice.call($("p_files").files || []).concat(state.pPending || []);
       if (up.length && state.assets) {
         for (var i = 0; i < up.length; i++) { var f = up[i], r = await state.assets.upload(new File([f], f.name, { type: f.type })); doc.files.push({ url: r.url, name: f.name }); }
       }
       var fromPi = state.pFormFrom, said = "";
+      if (prev) said += newVersion(prev, doc);
       (state.pOpen = state.pOpen || {})[lname || ""] = true;
       if (lname) { var pk = fromPi != null ? pickDefaults(fromPi, lname, doc.purpose) : { flat: null, by: null }, lr = await ensureLine(lname, pk.flat, pk.by); if (lr.created) said = " Added the cell line " + lname + "."; if (lr.filled) said += " Filled " + lr.filled + " of its defaults."; }
       var ref = state.pEditing ? state.db.doc("protocols/" + state.pEditing) : state.db.collection("protocols").doc();
@@ -1571,7 +1766,68 @@ window.CCL_GOOGLE_CLIENT_ID = "";
       var shown = msg.textContent; setTimeout(function () { if ($("pMsg").textContent === shown) $("pMsg").textContent = ""; }, 6000);
     } catch (e) { msg.textContent = "Could not save: " + (e && e.message ? e.message : "try again"); }
   });
-  $("pList").addEventListener("click", function (ev) {
+  $("pList").addEventListener("click", async function (ev) {
+    var sb = ev.target.closest("button");
+    if (sb && sb.dataset.areareset) { var pr0 = state.protocols.filter(function (x) { return x.id === sb.dataset.areap; })[0]; if (pr0) saveProtoArea(pr0, sb.dataset.areareset, null); return; }
+    if (sb && sb.dataset.puse) {
+      var pu = state.protocols.filter(function (x) { return x.id === sb.dataset.puse; })[0], vv = pu && (pu.versions || [])[Number(sb.dataset.pvi)]; if (!pu || !vv) return;
+      if (!sb.dataset.armed) { sb.dataset.armed = "1"; sb.textContent = "Tap again to use " + (vv.version || "this version"); setTimeout(function () { if (sb.isConnected) { delete sb.dataset.armed; sb.textContent = "Use this version"; } }, 4000); return; }
+      var nd = {}; Object.keys(pu).forEach(function (k) { if (k !== "id") nd[k] = pu[k]; });
+      nd.title = vv.title || pu.title; nd.purpose = vv.purpose || pu.purpose; nd.line = vv.line != null ? vv.line : pu.line; nd.steps = vv.steps || ""; nd.seedMin = num(vv.seedMin); nd.seedMax = num(vv.seedMax); nd.seedNote = vv.seedNote || "";
+      nd.version = vv.fromSite ? (vv.version || "lab version") : pu.version; nd.updatedAt = Date.now();
+      var said2 = newVersion(pu, nd);
+      if (vv.fromSite && nd.versions) { nd.edited = false; nd.versions = nd.versions.filter(function (x, i) { return i !== Number(sb.dataset.pvi); }); var last = nd.notesLog[nd.notesLog.length - 1]; if (last && last.auto) last.text = "Switched to the lab site version " + nd.version + ". Your previous version " + (pu.version || "") + " is under Earlier versions."; }
+      try { await state.db.doc("protocols/" + pu.id).set(nd); setStatus(said2 ? "Done." + said2 : "That version is the same as the one in use."); } catch (e) { setStatus("Could not switch: " + (e && e.message ? e.message : "try again")); }
+      return;
+    }
+    if (sb && sb.dataset.pnadd) { state.pnForm = { pid: sb.dataset.pnadd, date: today(), text: "" }; renderProtocols(); var nt = $("pList").querySelector('[data-pnform] [data-pnf="text"]'); if (nt) nt.focus(); return; }
+    if (sb && sb.dataset.pncancel) { state.pnForm = null; renderProtocols(); return; }
+    if (sb && sb.dataset.pnedit) {
+      var pq = state.protocols.filter(function (x) { return x.id === sb.dataset.pnedit; })[0], nq = pq && (pq.notesLog || []).filter(function (x) { return x.id === sb.dataset.pni; })[0];
+      if (nq) { state.pnForm = { pid: pq.id, id: nq.id, date: nq.date, text: nq.text, auto: nq.auto }; renderProtocols(); }
+      return;
+    }
+    if (sb && sb.dataset.pndel) {
+      if (!sb.dataset.armed) { sb.dataset.armed = "1"; sb.textContent = "Tap again to delete"; setTimeout(function () { if (sb.isConnected) { delete sb.dataset.armed; sb.textContent = "Delete"; } }, 3000); return; }
+      var pz = state.protocols.filter(function (x) { return x.id === sb.dataset.pndel; })[0]; if (!pz) return;
+      try { await state.db.doc("protocols/" + pz.id).update({ notesLog: (pz.notesLog || []).filter(function (x) { return x.id !== sb.dataset.pni; }) }); } catch (e) { setStatus("Could not delete: " + (e && e.message ? e.message : "try again")); }
+      return;
+    }
+    if (sb && sb.dataset.pnsave) {
+      var nf = state.pnForm || {}, nbox = sb.closest("[data-pnform]"), nm = nbox && nbox.querySelector("[data-pnmsg]"), txt = String(nf.text || "").trim();
+      if (!txt) { if (nm) nm.textContent = "Write the note first."; return; }
+      if (!nf.date) { if (nm) nm.textContent = "Add the date."; return; }
+      var pn = state.protocols.filter(function (x) { return x.id === sb.dataset.pnsave; })[0]; if (!pn) return;
+      var nl2 = (pn.notesLog || []).slice(), nrec = { id: nf.id || ("n" + Date.now().toString(36)), date: nf.date, text: txt, savedAt: Date.now() };
+      var at2 = nl2.map(function (x) { return x.id; }).indexOf(nrec.id); if (at2 >= 0) nl2[at2] = nrec; else nl2.push(nrec);
+      sb.disabled = true;
+      try { state.pnForm = null; await state.db.doc("protocols/" + pn.id).update({ notesLog: nl2 }); } catch (e) { state.pnForm = nf; sb.disabled = false; if (nm) nm.textContent = "Could not save: " + (e && e.message ? e.message : "try again"); }
+      return;
+    }
+    if (sb && sb.dataset.stadd) { state.stForm = { pid: sb.dataset.stadd, date: today() }; renderProtocols(); var fi = $("pList").querySelector('[data-stform] [data-stf="type"]'); if (fi) fi.focus(); return; }
+    if (sb && sb.dataset.stcancel) { state.stForm = null; renderProtocols(); return; }
+    if (sb && sb.dataset.stedit) {
+      var pe = state.protocols.filter(function (x) { return x.id === sb.dataset.stedit; })[0], te = pe && (pe.seedTests || []).filter(function (x) { return x.id === sb.dataset.sti; })[0];
+      if (te) { state.stForm = { pid: pe.id, id: te.id, type: te.type, cells: te.cells == null ? "" : String(te.cells), date: te.date, notes: te.notes || "" }; renderProtocols(); stLive($("pList").querySelector("[data-stform]")); }
+      return;
+    }
+    if (sb && sb.dataset.stdel) {
+      if (!sb.dataset.armed) { sb.dataset.armed = "1"; sb.textContent = "Tap again to delete"; setTimeout(function () { if (sb.isConnected) { delete sb.dataset.armed; sb.textContent = "Delete"; } }, 3000); return; }
+      var pd = state.protocols.filter(function (x) { return x.id === sb.dataset.stdel; })[0]; if (!pd) return;
+      try { await state.db.doc("protocols/" + pd.id).update({ seedTests: (pd.seedTests || []).filter(function (x) { return x.id !== sb.dataset.sti; }) }); } catch (e) { setStatus("Could not delete: " + (e && e.message ? e.message : "try again")); }
+      return;
+    }
+    if (sb && sb.dataset.stsave) {
+      var f = state.stForm || {}, box = sb.closest("[data-stform]"), m = box && box.querySelector("[data-stmsg]"), cells = num(f.cells), type = String(f.type || "").trim();
+      if (!type) { if (m) m.textContent = "Add the flask or dish."; return; }
+      if (cells == null || !(cells > 0)) { if (m) m.textContent = "Add the number of cells, e.g. 5e5."; return; }
+      var ps = state.protocols.filter(function (x) { return x.id === sb.dataset.stsave; })[0]; if (!ps) return;
+      var list = (ps.seedTests || []).slice(), rec = { id: f.id || ("t" + Date.now().toString(36)), type: type, cells: cells, area: areaOf(type, ps), date: f.date || today(), notes: String(f.notes || "").trim(), savedAt: Date.now() };
+      var at = list.map(function (x) { return x.id; }).indexOf(rec.id); if (at >= 0) list[at] = rec; else list.push(rec);
+      sb.disabled = true; if (m) m.textContent = "Saving...";
+      try { state.stForm = null; await state.db.doc("protocols/" + ps.id).update({ seedTests: list }); } catch (e) { state.stForm = f; sb.disabled = false; if (m) m.textContent = "Could not save: " + (e && e.message ? e.message : "try again"); }
+      return;
+    }
     var b = ev.target.closest("button"); if (!b) return;
     if (b.dataset.pedit) {
       var p = state.protocols.filter(function (x) { return x.id === b.dataset.pedit; })[0]; if (!p) return;
@@ -1581,7 +1837,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
       $("protoForm").scrollIntoView({ behavior: "smooth", block: "start" });
     } else if (b.dataset.ppdf) {
       var pp = state.protocols.filter(function (x) { return x.id === b.dataset.ppdf; })[0]; if (!pp) return;
-      protoPdf({ title: pp.title, line: pp.line, purpose: pp.purpose, version: pp.version, steps: cleanSteps(pp.steps), updated: pp.updatedAt || pp.createdAt, files: pp.files, seedMin: pp.seedMin, seedMax: pp.seedMax, seedNote: pp.seedNote }, b);
+      protoPdf({ title: pp.title, line: pp.line, purpose: pp.purpose, version: pp.version, steps: cleanSteps(pp.steps), updated: pp.updatedAt || pp.createdAt, files: pp.files, seedTests: pp.seedTests || [], areas: pp.areas || {}, notesLog: pp.notesLog || [], versions: pp.versions || [], seedMin: pp.seedMin, seedMax: pp.seedMax, seedNote: pp.seedNote }, b);
     } else if (b.dataset.pdel) {
       if (b.dataset.armed) { state.db.doc("protocols/" + b.dataset.pdel).delete(); return; }
       b.dataset.armed = "1"; b.textContent = "Confirm delete";
@@ -1982,7 +2238,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     missing.forEach(function (n) { h += '<div class="actions" style="margin-top:0"><span class="sub">Cell line "' + esc(n) + '" is not in your log yet.</span><button type="button" class="small" data-rvline="' + esc(n) + '">Add this cell line</button></div>'; });
     h += pending.map(function (it) {
       var c = it.path.split("/")[0], d = it.d, tag = it.st === "changed" ? "Changed" : "New", title, detail;
-      if (c === "entries") { title = esc(d.date || "") + " · " + esc(chipLabel(d)); detail = [d.line, revExpName(d.exp), chipDetail(d), d.notes].filter(Boolean).map(esc).join(" · "); }
+      if (c === "entries") { title = esc(d.date || "") + " · " + esc(chipLabel(d)); detail = [d.line, revExpName(d.exp), chipDetail(d), d.flag ? "\u26a0 Flagged" : "", d.notes].filter(Boolean).map(esc).join(" · "); }
       else if (c === "experiments") { title = "Experiment: " + esc(d.name || ""); detail = esc([d.line, "thawed " + (d.start || "?"), d.end ? "ended " + d.end : ""].filter(Boolean).join(" · ")); }
       else { title = "Media batch " + esc(d.id || it.path.split("/")[1]); detail = esc([d.date, d.base, d.fbs ? d.fbs + "% FBS" : ""].filter(Boolean).join(" · ")); }
       return '<div class="pcard"><div class="pcardHead"><b>' + title + '</b><span class="sub">' + tag + '</span><span><button type="button" class="small primary" data-rvok="' + esc(it.path) + '">Approve</button> <button type="button" class="small" data-rvno="' + esc(it.path) + '">Reject</button></span></div>' + (detail ? '<div class="sub" style="margin-top:4px">' + detail + "</div>" : "") + "</div>";
@@ -2200,7 +2456,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     } catch (e) { $("tplMsg").textContent = "Could not save: " + (e && e.code ? e.code + " - " : "") + (e && e.message ? e.message : "try again"); }
   };
   function resetEntryForm() {
-    F.forEach(function (k) { $("f_" + k).value = ""; });
+    F.forEach(function (k) { $("f_" + k).value = ""; }); $("f_flag").checked = false;
     $("f_date").value = today();
     $("f_photo").value = ""; $("f_photoDesc").value = "";
     state.pf = {}; state.editing = null; applyTemplate(); renderCustomFields(null, null); state.vialPassage = ""; $("dissScanOut").textContent = ""; ["dissType", "dissExp", "dissBrand", "dissCat", "dissConc"].forEach(function (k) { $("f_" + k).classList.remove("warn"); });
@@ -2227,8 +2483,9 @@ window.CCL_GOOGLE_CLIENT_ID = "";
   function preCalc() {
     var c1 = num($("f_c1").value), c2 = num($("f_c2").value), g = num($("f_target").value), box = $("preBox");
     var fl = entryFl.get(), n = flaskTotal(fl), h = '<div class="rem">\u26a0 Worked out by the app. Please check these numbers yourself before you seed.</div>';
-    var unknown = fl.filter(function (f) { return !unitArea(f.type); }).map(function (f) { return f.type; }), tot = fl.reduce(function (s, f) { return s + f.n * (unitArea(f.type) || 0); }, 0);
     var pr = state.protocols.filter(function (x) { return x.id === $("f_protocol").value; })[0], sd = seedOf(pr);
+    var ua = function (f) { var a = num(f.area) > 0 ? num(f.area) : areaOf(f.type, pr); return a == null ? null : a * (WELLS[f.type] || 1); };
+    var unknown = fl.filter(function (f) { return !ua(f); }).map(function (f) { return f.type; }), tot = fl.reduce(function (s, f) { return s + f.n * (ua(f) || 0); }, 0);
     if (sd && fl.length && !unknown.length) h += "<div>Protocol range for " + esc(flaskText(fl)) + " (" + esc(cellsTxt(tot)) + " cm²): <b>" + esc(rangeTxt(sd.min * tot, sd.max * tot)) + " cells</b> (" + esc(rangeTxt(sd.min, sd.max)) + " cells/cm²)</div>";
     if (c1 == null || c2 == null) { box.innerHTML = (sd && fl.length && !unknown.length ? h : "") + '<span class="sub">Enter both counts and the cells to seed: the average and the volume to add are worked out here straight away.</span>'; return; }
     var t = (c1 + c2) / 2;
@@ -2246,8 +2503,8 @@ window.CCL_GOOGLE_CLIENT_ID = "";
         }).join("") + "</ul>" + (own.length < fl.length ? '<div class="sub">Add a number for every flask type to include them all in the total.</div>' : "");
       } else if (n > 1 && fl.length > 1 && !unknown.length) {
         h += "<div>Split by growth area (" + esc(cellsTxt(tot)) + " cm² in total):</div><ul style=\"margin:2px 0 0 18px;padding:0\">" + fl.map(function (f) {
-          var share = unitArea(f.type) / tot, ce = g * share;
-          return "<li><b>" + esc(f.type) + "</b>" + (f.n > 1 ? " (each of " + f.n + ")" : "") + ": " + esc(fmt(g)) + " \u00d7 " + esc(cellsTxt(unitArea(f.type))) + "/" + esc(cellsTxt(tot)) + " = " + esc(cellsTxt(ce)) + " cells \u2192 <b>" + esc(fmt(ce / t)) + " mL</b>" + (WELLS[f.type] ? " per plate (" + esc(fmt(ce / t / WELLS[f.type])) + " mL per well)" : "") + "</li>";
+          var share = ua(f) / tot, ce = g * share;
+          return "<li><b>" + esc(f.type) + "</b>" + (f.n > 1 ? " (each of " + f.n + ")" : "") + ": " + esc(fmt(g)) + " \u00d7 " + esc(cellsTxt(ua(f))) + "/" + esc(cellsTxt(tot)) + " = " + esc(cellsTxt(ce)) + " cells \u2192 <b>" + esc(fmt(ce / t)) + " mL</b>" + (WELLS[f.type] ? " per plate (" + esc(fmt(ce / t / WELLS[f.type])) + " mL per well)" : "") + "</li>";
         }).join("") + "</ul>";
       } else if (n > 1) h += "<div>" + (unknown.length ? "No growth area for " + esc(unknown.join(", ")) + ", so it is split evenly: " : "") + "<b>" + esc(fmt(v / n)) + " mL</b> in each of the " + n + " (" + esc(cellsTxt(g / n)) + " cells each)</div>";
       else if (n === 1 && WELLS[fl[0].type]) h += "<div><b>" + esc(fmt(v / WELLS[fl[0].type])) + " mL</b> per well</div>";
@@ -2270,7 +2527,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
   }
   $("f_action").addEventListener("change", onActionChange);
   ["f_c1", "f_c2", "f_target", "f_avg", "f_vol", "f_seeded"].forEach(function (id) { $(id).addEventListener("input", liveCheck); });
-  $("f_protocol").addEventListener("change", function () { try { preCalc(); } catch (e) {} });
+  $("f_protocol").addEventListener("change", function () { entryFl.refresh(); try { preCalc(); } catch (e) {} });
 
   $("entryForm").addEventListener("submit", async function (ev) {
     ev.preventDefault();
@@ -2288,7 +2545,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
       rinse: $("f_rinse").value.trim(), dissType: $("f_dissType").value.trim(), dissBrand: $("f_dissBrand").value.trim(), dissCat: $("f_dissCat").value.trim(), dissExp: $("f_dissExp").value, dissConc: $("f_dissConc").value.trim(),
       dissVol: num($("f_dissVol").value), dissTemp: num($("f_dissTemp").value), dissTime: num($("f_dissTime").value), coating: $("f_coating").value.trim(), coatingExp: $("f_coatingExp").value,
       c1: num($("f_c1").value), c2: num($("f_c2").value), target: num($("f_target").value), perFlask: pfList(), avg: num($("f_avg").value), vol: num($("f_vol").value), seeded: num($("f_seeded").value),
-      media: $("f_media").value.trim(), conf: num($("f_conf").value), myco: $("f_myco").value, notes: $("f_notes").value.trim(),
+      media: $("f_media").value.trim(), conf: num($("f_conf").value), myco: $("f_myco").value, notes: $("f_notes").value.trim(), flag: $("f_flag").checked,
       createdAt: prev && prev.createdAt ? prev.createdAt : Date.now()
     };
     doc.protocol = $("f_protocol").value || ""; var pOpt = $("f_protocol").selectedOptions[0]; doc.protocolName = doc.protocol && pOpt ? pOpt.textContent : "";
@@ -2359,9 +2616,9 @@ window.CCL_GOOGLE_CLIENT_ID = "";
       var fl = flasksOf(e), flTxt = fl.length ? flaskTotal(fl) + " (" + flaskText(fl) + ")" : "";
       var dis = [[e.dissType, e.dissConc].filter(Boolean).join(" "), [e.dissBrand, e.dissCat ? "cat # " + e.dissCat : "", e.dissExp ? expTxt(e.dissExp) : ""].filter(Boolean).join(", "),
         [num(e.dissVol) != null ? fmt(num(e.dissVol)) + " mL" : "", num(e.dissTemp) != null ? fmt(num(e.dissTemp)) + " \u00b0C" : "", num(e.dissTime) != null ? fmt(num(e.dissTime)) + " min" : ""].filter(Boolean).join(", ")].filter(Boolean).map(esc).join("<br>");
-      h += "<tr><td>" + esc(e.date) + "</td><td>" + esc(e.passage) + "</td><td>" + esc(e.action) + "</td><td>" + esc(e.split) + "</td><td>" + [e.frozenDate, e.freezeMedia && e.freezeMedia + (e.freezeMediaExp ? " (" + expTxt(e.freezeMediaExp) + ")" : ""), e.frozenBy && "by " + e.frozenBy, e.vialId && "vial " + e.vialId, num(e.thawMediaVol) != null ? "media added " + fmt(num(e.thawMediaVol)) + " mL" : ""].filter(Boolean).map(esc).join("<br>") + "</td><td>" + esc(flTxt) + "</td><td>" + esc(e.coating) + (e.coatingExp ? "<small>" + esc(expTxt(e.coatingExp)) + "</small>" : "") + "</td><td>" + esc(e.rinse) + "</td><td>" + dis + "</td><td>" + [e.cenSpeed, num(e.cenTime) != null ? fmt(num(e.cenTime)) + " min" : ""].filter(Boolean).map(esc).join("<br>") + "</td><td>" + (e.custom || []).map(function (c) { return "<div>" + esc(c.label) + ": " + esc(c.value) + (c.unit ? " " + esc(c.unit) : "") + "</div>"; }).join("") + "</td>" +
+      h += "<tr" + (e.flag ? ' class="flagged"' : "") + "><td>" + esc(e.date) + "</td><td>" + esc(e.passage) + "</td><td>" + esc(e.action) + "</td><td>" + esc(e.split) + "</td><td>" + [e.frozenDate, e.freezeMedia && e.freezeMedia + (e.freezeMediaExp ? " (" + expTxt(e.freezeMediaExp) + ")" : ""), e.frozenBy && "by " + e.frozenBy, e.vialId && "vial " + e.vialId, num(e.thawMediaVol) != null ? "media added " + fmt(num(e.thawMediaVol)) + " mL" : ""].filter(Boolean).map(esc).join("<br>") + "</td><td>" + esc(flTxt) + "</td><td>" + esc(e.coating) + (e.coatingExp ? "<small>" + esc(expTxt(e.coatingExp)) + "</small>" : "") + "</td><td>" + esc(e.rinse) + "</td><td>" + dis + "</td><td>" + [e.cenSpeed, num(e.cenTime) != null ? fmt(num(e.cenTime)) + " min" : ""].filter(Boolean).map(esc).join("<br>") + "</td><td>" + (e.custom || []).map(function (c) { return "<div>" + esc(c.label) + ": " + esc(c.value) + (c.unit ? " " + esc(c.unit) : "") + "</div>"; }).join("") + "</td>" +
         "<td>" + esc(fmt(num(e.c1))) + "</td><td>" + esc(fmt(num(e.c2))) + "</td>" + cell(num(e.avg), c.avg) + "<td>" + esc(fmt(num(e.vol))) + "</td>" + cell(num(e.seeded), c.seeded) + '<td class="calc">' + workHtml(e) + "</td>" +
-        "<td>" + esc(e.media) + (num(e.mediaVol) != null ? "<small>" + esc(fmt(num(e.mediaVol))) + " mL added</small>" : "") + "</td><td>" + esc(fmt(num(e.conf))) + "</td><td>" + esc(e.myco) + "</td><td>" + esc(e.protocolName) + '</td><td class="notes">' + esc(e.notes) + "</td>" +
+        "<td>" + esc(e.media) + (num(e.mediaVol) != null ? "<small>" + esc(fmt(num(e.mediaVol))) + " mL added</small>" : "") + "</td><td>" + esc(fmt(num(e.conf))) + "</td><td>" + esc(e.myco) + "</td><td>" + esc(e.protocolName) + '</td><td class="notes">' + (e.flag ? '<span class="flagtag">\u26a0 Flagged</span>' : "") + esc(e.notes) + "</td>" +
         "<td>" + (e.photoUrl ? '<a href="' + esc(e.photoUrl) + '" target="_blank" rel="noopener" title="' + esc(e.photoName) + '"><img src="' + esc(e.photoUrl) + '" alt="' + esc(e.photoName) + '"></a>' : "") + "</td>" +
         '<td><button class="small" data-edit="' + esc(e.id) + '">Edit</button> <button class="small" data-del="' + esc(e.id) + '">Delete</button></td></tr>';
     });
@@ -2373,8 +2630,8 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     if (b.dataset.edit) {
       var e = state.entries.filter(function (x) { return x.id === b.dataset.edit; })[0]; if (!e) return;
       state.editing = e.id;
-      F.forEach(function (k) { var v = e[k]; $("f_" + k).value = v == null ? "" : v; });
-      state.pf = {}; (e.perFlask || []).forEach(function (f) { state.pf[f.type] = f.cells; }); entryFl.set(flasksOf(e)); renderPerFlask(); ensureProtocolOption(e.protocol, e.protocolName); renderCustomFor(e); updateEntryVisibility();
+      F.forEach(function (k) { var v = e[k]; $("f_" + k).value = v == null ? "" : v; }); $("f_flag").checked = !!e.flag;
+      state.pf = {}; (e.perFlask || []).forEach(function (f) { state.pf[f.type] = f.cells; }); entryFl.set(flasksOf(e), true); renderPerFlask(); ensureProtocolOption(e.protocol, e.protocolName); renderCustomFor(e); updateEntryVisibility();
       $("formTitle").textContent = "Edit entry"; $("saveBtn").textContent = "Save changes"; $("cancelEdit").hidden = false;
       liveCheck(); $("entryForm").scrollIntoView({ behavior: "smooth", block: "start" });
     } else if (b.dataset.del) {
@@ -2399,9 +2656,9 @@ window.CCL_GOOGLE_CLIENT_ID = "";
   function weekStartOf(s) { var d = pdate(s), off = (d.getDay() - state.weekStart + 7) % 7; d.setDate(d.getDate() - off); return isoOf(d); }
   function dayLabel(s, o) { return pdate(s).toLocaleDateString(undefined, o); }
   function pLab(p) { p = String(p || "").trim(); return !p ? "" : /^p/i.test(p) ? "P" + p.replace(/^p\s*/i, "") : "P" + p; }
-  function chipLabel(e) { return (e.action || "Entry") + (e.passage ? " \u00b7 " + pLab(e.passage) : ""); }
+  function chipLabel(e) { return (e.flag ? "\u26a0 " : "") + (e.action || "Entry") + (e.passage ? " \u00b7 " + pLab(e.passage) : ""); }
   var SHORT = { "Change media": "Media", Freeze: "Freeze", Harvest: "Harvest" };
-  function chipShort(e) { var a = e.action || "Entry"; return (SHORT[a] || a) + (e.passage ? " " + pLab(e.passage) : ""); }
+  function chipShort(e) { var a = e.action || "Entry"; return (e.flag ? "\u26a0 " : "") + (SHORT[a] || a) + (e.passage ? " " + pLab(e.passage) : ""); }
   function chipDetail(e) {
     var fl = flasksOf(e), parts = [];
     if (fl.length) parts.push(flaskText(fl)); if (e.media) parts.push("media " + e.media); if (num(e.mediaVol) != null) parts.push(fmt(num(e.mediaVol)) + " mL");
@@ -2902,11 +3159,12 @@ window.CCL_GOOGLE_CLIENT_ID = "";
           var r = ws.addRow([e.date || null, e.passage || null, e.action || null, e.split || null, fl.length ? flaskTotal(fl) : null, fl.length ? flaskText(fl) : null, e.coating || null, e.coatingExp || null,
             e.rinse || null, e.dissType || null, e.dissBrand || null, e.dissCat || null, e.dissExp || null, e.dissConc || null, num(e.dissVol), num(e.dissTemp), num(e.dissTime),
             num(e.c1), num(e.c2), num(e.avg), c.avg ? c.avg.expected : null, num(e.vol), num(e.seeded), c.seeded ? c.seeded.expected : null, w || null,
-            e.media || null, num(e.conf), e.myco || null, e.notes || null, e.photoName || null, e.frozenDate || null, e.freezeMedia || null, e.frozenBy || null, e.freezeMediaExp || null, num(e.thawMediaVol), e.cenSpeed || null, num(e.cenTime), e.vialId || null, num(e.mediaVol), e.protocolName || null].concat(clabels.map(function (L) { var m = (e.custom || []).filter(function (c) { return c.label + (c.unit ? " (" + c.unit + ")" : "") === L; })[0]; return m ? (m.type === "number" && num(m.value) != null ? num(m.value) : m.value) : null; })));
+            e.media || null, num(e.conf), e.myco || null, (e.flag ? "\u26a0 FLAGGED" + (e.notes ? ": " : "") : "") + (e.notes || "") || null, e.photoName || null, e.frozenDate || null, e.freezeMedia || null, e.frozenBy || null, e.freezeMediaExp || null, num(e.thawMediaVol), e.cenSpeed || null, num(e.cenTime), e.vialId || null, num(e.mediaVol), e.protocolName || null].concat(clabels.map(function (L) { var m = (e.custom || []).filter(function (c) { return c.label + (c.unit ? " (" + c.unit + ")" : "") === L; })[0]; return m ? (m.type === "number" && num(m.value) != null ? num(m.value) : m.value) : null; })));
           if (c.avg) r.getCell(cols.indexOf("Average count (yours)") + 1).fill = c.avg.ok ? GREEN : RED;
           if (c.seeded) r.getCell(cols.indexOf("Cells seeded (yours)") + 1).fill = c.seeded.ok ? GREEN : RED;
           r.getCell(cols.indexOf("Working") + 1).alignment = { wrapText: true, vertical: "top" };
           r.getCell(cols.indexOf("Notes") + 1).alignment = { wrapText: true, vertical: "top" };
+          if (e.flag) r.getCell(cols.indexOf("Notes") + 1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFCE8C3" } };
         });
     });
     addMediaSheet(wb, sheetName("Media & lots"), state.media, null);
