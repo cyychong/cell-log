@@ -3,6 +3,8 @@
 /* To turn on handwriting, vial and protocol reading (AI), paste the address of your reading service between the quotes on the next line.
    Leave it empty and the page still reads printed bottle labels on the phone itself. */
 window.CCL_READER_URL = "";
+/* To turn on Google Drive backups, paste the OAuth client ID from Google Cloud between the quotes on the next line (it is public, not a secret). */
+window.CCL_GOOGLE_CLIENT_ID = "";
 </script>
 <script>
 (function () {
@@ -363,6 +365,122 @@ window.CCL_READER_URL = "";
     }, function () {});
   }
 
+
+  // ---------- backups: the phone's share menu, Google Drive, and a reminder ----------
+  function backupBlob() { return new Blob([JSON.stringify({ app: "cell-culture-log", version: 1, docs: mem })], { type: "application/json" }); }
+  function stampName() { var d = new Date(), iso = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString(); return "cell-culture-backup-" + iso.slice(0, 10) + "_" + iso.slice(11, 16).replace(":", "") + ".json"; }
+  function hasEntries() { return Object.keys(mem).some(function (k) { return k.indexOf("entries/") === 0; }); }
+  function markBackup() { ls("ccl-lastBackup", String(Date.now())); if (window.__backupUi) window.__backupUi(); }
+  function remindDays() { var v = ls("ccl-remindDays"); return v == null ? 7 : Number(v) || 0; }
+  function lastBackup() { return Number(ls("ccl-lastBackup")) || 0; }
+  function backupDue() {
+    if (viewing || !hasEntries()) return false;
+    if (!ls("ccl-firstSeen")) ls("ccl-firstSeen", String(Date.now()));
+    var days = remindDays(); if (!days) return false;
+    var since = lastBackup() || Number(ls("ccl-firstSeen")) || Date.now();
+    return Date.now() - since >= days * 86400000;
+  }
+  function ago(t) { if (!t) return "never"; var d = Math.floor((Date.now() - t) / 86400000); return d <= 0 ? "today" : d === 1 ? "yesterday" : d + " days ago"; }
+  function isPhone() { return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent)); }
+  // On a phone, the share menu lets people put the file straight into Google Drive (or Files, email...). Elsewhere it downloads.
+  function saveBackupFile(msg) {
+    var name = stampName(), blob = backupBlob(), file = null;
+    try { file = new File([blob], name, { type: "application/json" }); } catch (e) {}
+    var dl = function () { downloads.save({ filename: name, data: blob }); markBackup(); msg("Backup file downloaded."); };
+    if (file && isPhone() && navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+      return navigator.share({ files: [file], title: "Cell culture log backup" }).then(function () {
+        markBackup(); msg("Backup sent. If you picked Drive (or Save to Files, then Google Drive), it is in your Google Drive.");
+      }, function (e) { if (e && e.name === "AbortError") msg("Backup not saved."); else dl(); });
+    }
+    dl(); return Promise.resolve();
+  }
+  function restoreFrom(j, msg) {
+    if (!j || j.app !== "cell-culture-log" || !j.docs) { msg("That file is not a backup from this log."); return; }
+    if (!confirm("Replace everything saved in this browser with this backup?")) return;
+    var tx = idb.transaction(["docs"], "readwrite"), os = tx.objectStore("docs"); os.clear();
+    Object.keys(j.docs).forEach(function (k) { os.put(j.docs[k], k); });
+    tx.oncomplete = function () { location.reload(); };
+  }
+
+  // Google Drive. Needs window.CCL_GOOGLE_CLIENT_ID (set by whoever hosts the page). The page only asks for "drive.file":
+  // it can see and change only the files it made itself, nothing else in the person's Drive.
+  var GID = String(window.CCL_GOOGLE_CLIENT_ID || "").trim(), GAPI = "https://www.googleapis.com/drive/v3/files", GFOLDER = "Cell culture log backups", GKEEP = 20;
+  var gtok = { token: null, exp: 0 };
+  try { var gt0 = JSON.parse(sessionStorage.getItem("ccl-gtok") || "null"); if (gt0 && gt0.exp > Date.now() + 60000) gtok = gt0; } catch (e) {}
+  function gdCfg() { try { return JSON.parse(ls("ccl-gdrive") || "null"); } catch (e) { return null; } }
+  function gdSet(o) { ls("ccl-gdrive", o ? JSON.stringify(o) : null); }
+  function gdHasToken() { return !!(gtok.token && gtok.exp > Date.now() + 60000); }
+  var gisP = null;
+  function gisReady() { return !!(window.google && google.accounts && google.accounts.oauth2); }
+  function loadGis() {
+    return gisP = gisP || new Promise(function (res, rej) {
+      if (gisReady()) return res();
+      var sc = document.createElement("script"); sc.src = "https://accounts.google.com/gsi/client"; sc.async = true;
+      sc.onload = function () { res(); }; sc.onerror = function () { gisP = null; rej(new Error("Could not reach Google. Check the internet connection.")); };
+      document.head.appendChild(sc);
+    });
+  }
+  // Must run straight from a tap, so Google's sign-in window is not blocked.
+  function gdSignIn() {
+    if (gdHasToken()) return Promise.resolve(gtok.token);
+    var go = function () {
+      return new Promise(function (res, rej) {
+        var c = gdCfg();
+        var tc = google.accounts.oauth2.initTokenClient({
+          client_id: GID, scope: "https://www.googleapis.com/auth/drive.file", login_hint: (c && c.email) || undefined,
+          callback: function (r) {
+            if (r && r.access_token) { gtok = { token: r.access_token, exp: Date.now() + (Number(r.expires_in) || 3600) * 1000 }; try { sessionStorage.setItem("ccl-gtok", JSON.stringify(gtok)); } catch (e) {} res(gtok.token); }
+            else rej(new Error("Google sign-in did not finish."));
+          },
+          error_callback: function (e) { rej(new Error(e && e.type === "popup_closed" ? "Google sign-in was closed." : e && e.type === "popup_failed_to_open" ? "The Google sign-in window was blocked. Allow pop-ups for this page and try again." : "Google sign-in did not finish.")); }
+        });
+        tc.requestAccessToken({ prompt: c ? "" : "consent" });
+      });
+    };
+    return gisReady() ? go() : loadGis().then(go);
+  }
+  function gdFetch(method, url, body, headers) {
+    if (!gdHasToken()) return Promise.reject(new Error("signin"));
+    return fetch(url, { method: method, headers: Object.assign({ Authorization: "Bearer " + gtok.token }, headers || {}), body: body, cache: "no-store" }).then(function (r) {
+      if (r.status === 401) { gtok = { token: null, exp: 0 }; try { sessionStorage.removeItem("ccl-gtok"); } catch (e) {} throw new Error("signin"); }
+      if (!r.ok) return r.text().then(function (t) { throw new Error("Google Drive did not accept that (" + r.status + "). " + t.slice(0, 160)); });
+      return r.status === 204 ? null : r.json();
+    });
+  }
+  function gdFolder() {
+    var c = gdCfg() || {};
+    var check = c.folder ? gdFetch("GET", GAPI + "/" + c.folder + "?fields=id,trashed").then(function (f) { return f && !f.trashed ? f.id : null; }, function (e) { if (e.message === "signin") throw e; return null; }) : Promise.resolve(null);
+    return check.then(function (id) {
+      if (id) return id;
+      var q = encodeURIComponent("name='" + GFOLDER + "' and mimeType='application/vnd.google-apps.folder' and trashed=false");
+      return gdFetch("GET", GAPI + "?q=" + q + "&fields=files(id)").then(function (r) {
+        if (r && r.files && r.files[0]) return r.files[0].id;
+        return gdFetch("POST", GAPI + "?fields=id", JSON.stringify({ name: GFOLDER, mimeType: "application/vnd.google-apps.folder" }), { "Content-Type": "application/json" }).then(function (f) { return f.id; });
+      });
+    }).then(function (id) { var c2 = gdCfg() || {}; c2.folder = id; gdSet(c2); return id; });
+  }
+  function gdList(fid) {
+    var q = encodeURIComponent("'" + fid + "' in parents and trashed=false and name contains 'cell-culture-backup-'");
+    return gdFetch("GET", GAPI + "?q=" + q + "&orderBy=" + encodeURIComponent("createdTime desc") + "&pageSize=100&fields=" + encodeURIComponent("files(id,name,createdTime,size)")).then(function (r) { return (r && r.files) || []; });
+  }
+  // Keeps the newest 20 backups; older ones go to the Drive bin (not deleted for good).
+  function gdPrune(fid) { return gdList(fid).then(function (fs) { return Promise.all(fs.slice(GKEEP).map(function (f) { return gdFetch("PATCH", GAPI + "/" + f.id, JSON.stringify({ trashed: true }), { "Content-Type": "application/json" }); })); }); }
+  var gdBusy = null;
+  function gdBackup() {
+    if (viewing) return Promise.reject(new Error("You are viewing someone else's log. Go back to your log first."));
+    if (gdBusy) return gdBusy;
+    return gdBusy = gdFolder().then(function (fid) {
+      var name = stampName(), bnd = "ccl" + rid(16);
+      var body = "--" + bnd + "\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n" + JSON.stringify({ name: name, parents: [fid], mimeType: "application/json" }) +
+        "\r\n--" + bnd + "\r\nContent-Type: application/json\r\n\r\n" + JSON.stringify({ app: "cell-culture-log", version: 1, docs: mem }) + "\r\n--" + bnd + "--";
+      return gdFetch("POST", "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name", body, { "Content-Type": "multipart/related; boundary=" + bnd }).then(function (f) {
+        var c = gdCfg() || {}; c.last = Date.now(); gdSet(c); markBackup();
+        return gdPrune(fid).then(function () { return f; }, function () { return f; });
+      });
+    }).then(function (f) { gdBusy = null; return f; }, function (e) { gdBusy = null; throw e; });
+  }
+  function gdErr(e) { return e && e.message === "signin" ? "Google sign-in has run out. Tap Back up to Google Drive to sign in again." : (e && e.message) || "Google Drive backup did not work."; }
+
   // ---------- footer: backup and shared logs ----------
   var BTN = "font:inherit;padding:4px 10px;border-radius:6px;border:1px solid #9ab0ad;background:transparent;color:inherit;cursor:pointer";
   document.addEventListener("DOMContentLoaded", function () {
@@ -371,6 +489,8 @@ window.CCL_READER_URL = "";
     bar.style.cssText = "max-width:1200px;margin:24px auto 16px;padding:0 16px;font:13px/1.4 system-ui,sans-serif;color:#7a8b89;display:flex;flex-direction:column;gap:8px";
     bar.innerHTML =
       '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><span>Your log is saved in this browser on this device. To keep a copy, move it to another device, or share it with someone, save a backup file:</span><button type="button" id="bkExport" style="' + BTN + '">Export backup</button><button type="button" id="bkImport" style="' + BTN + '">Restore a backup</button><input id="bkFile" type="file" accept="application/json,.json" hidden><span id="bkMsg" role="status"></span></div>' +
+      '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><span id="bkLast"></span><label style="display:flex;gap:6px;align-items:center">Remind me to back up<select id="bkEvery" style="font:inherit;padding:3px 6px;border-radius:6px;border:1px solid #9ab0ad;background:transparent;color:inherit"><option value="1">every day</option><option value="3">every 3 days</option><option value="7">every week</option><option value="14">every 2 weeks</option><option value="30">every month</option><option value="0">never</option></select></label></div>' +
+      '<div id="gdRow" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center" hidden><span id="gdState"></span><button type="button" id="gdConnect" style="' + BTN + '">Connect Google Drive</button><button type="button" id="gdNow" style="' + BTN + '" hidden>Back up to Google Drive</button><button type="button" id="gdRestore" style="' + BTN + '" hidden>Restore from Google Drive</button><label id="gdAutoL" style="display:flex;gap:6px;align-items:center" hidden><input type="checkbox" id="gdAuto"> Back up to Drive by itself when a backup is due</label><button type="button" id="gdOff" style="' + BTN + '" hidden>Disconnect</button><span id="gdMsg" role="status"></span></div>' +
       '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><span id="shState">Someone shared a cell line with you?</span><button type="button" id="shOpen" style="' + BTN + '">Open a share file</button><button type="button" id="shSend" style="' + BTN + '" hidden>Send my entries</button><input id="shFile" type="file" accept="application/zip,.zip,application/json,.json" hidden><span id="shMsg" role="status"></span></div>' +
       '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><span>Someone sent you their backup file?</span><button type="button" id="bkView" style="' + BTN + '">Open a shared log (view only)</button><input id="bkViewFile" type="file" accept="application/json,.json" hidden></div>' +
       '<div id="modeRow" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center" hidden><span>Printed bottle labels are read:</span><select id="ocrSel" style="font:inherit;padding:4px 8px;border-radius:6px;border:1px solid #9ab0ad;background:transparent;color:inherit"><option value="device">on this phone (free, printed text only, check every field)</option><option value="ai">with AI (more accurate, uses the reading service)</option></select></div>' +
@@ -381,26 +501,99 @@ window.CCL_READER_URL = "";
     if (readerUrl()) { document.getElementById("modeRow").hidden = false; document.getElementById("ocrSel").value = ocrMode(); document.getElementById("ocrSel").onchange = function () { ls("ccl-ocr", this.value); }; }
     codeRefresh(); document.getElementById("codeRemove").onclick = function () { ls("ccl-code", null); codeRefresh(); };
     document.addEventListener("click", function () { setTimeout(codeRefresh, 1500); });
-    document.getElementById("bkExport").onclick = function () {
-      var d = new Date(), iso = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
-      downloads.save({ filename: "cell-culture-backup-" + iso + ".json", data: new Blob([JSON.stringify({ app: "cell-culture-log", version: 1, docs: mem })], { type: "application/json" }) });
-      msg("Backup downloaded.");
-    };
+    document.getElementById("bkExport").onclick = function () { if (viewing) { msg("You are viewing someone else's log. Go back to your log first."); return; } saveBackupFile(msg); };
     document.getElementById("bkImport").onclick = function () { document.getElementById("bkFile").click(); };
     document.getElementById("bkFile").onchange = function () {
       var f = this.files && this.files[0]; if (!f) return;
       var fr = new FileReader();
       fr.onload = function () {
-        try {
-          var j = JSON.parse(fr.result); if (!j || j.app !== "cell-culture-log" || !j.docs) throw new Error("bad");
-          if (!confirm("Replace everything saved in this browser with this backup?")) return;
-          var tx = idb.transaction(["docs"], "readwrite"), os = tx.objectStore("docs"); os.clear();
-          Object.keys(j.docs).forEach(function (k) { os.put(j.docs[k], k); });
-          tx.oncomplete = function () { location.reload(); };
-        } catch (e) { msg("That file is not a backup from this log."); }
+        var j = null; try { j = JSON.parse(fr.result); } catch (e) {}
+        restoreFrom(j, msg);
       };
       fr.readAsText(f);
     };
+
+    // ----- backup reminder, Google Drive row -----
+    var gdMsg = function (t) { document.getElementById("gdMsg").textContent = t; };
+    var every = document.getElementById("bkEvery"); every.value = String(remindDays()); if (!every.value) every.value = "7";
+    every.onchange = function () { ls("ccl-remindDays", this.value); window.__backupUi(); };
+    var nag = null, nagLater = false;
+    function nagBar() {
+      var due = backupDue() && !nagLater, c = gdCfg();
+      if (!due) { if (nag) { nag.remove(); nag = null; } return; }
+      if (!nag) {
+        nag = document.createElement("div");
+        nag.style.cssText = "position:sticky;top:0;z-index:8999;background:#e3f2ef;color:#0b4b44;padding:8px 16px;font:14px/1.4 system-ui,sans-serif;display:flex;gap:10px;flex-wrap:wrap;align-items:center;border-bottom:1px solid #9cc9c1";
+        document.body.insertBefore(nag, document.body.firstChild);
+      }
+      var lb = lastBackup();
+      nag.innerHTML = "<b>" + (lb ? "Last backup " + ago(lb) + "." : "You have not backed up this log yet.") + "</b><span>Your log is only on this device.</span>" +
+        (c && GID ? '<button type="button" data-nag="drive" style="' + BTN + ';border-color:#0b4b44">Back up to Google Drive</button>' : "") +
+        '<button type="button" data-nag="file" style="' + BTN + ';border-color:#0b4b44">' + (isPhone() ? "Save a backup (Drive, Files...)" : "Save a backup file") + '</button>' +
+        '<button type="button" data-nag="later" style="' + BTN + ';border-color:#0b4b44">Later</button><span data-nagmsg role="status"></span>';
+    }
+    document.addEventListener("click", function (ev) {
+      var b = ev.target.closest && ev.target.closest("[data-nag]"); if (!b || !nag) return;
+      var say = function (t) { var m = nag && nag.querySelector("[data-nagmsg]"); if (m) m.textContent = t; else msg(t); };
+      if (b.dataset.nag === "later") { nagLater = true; nagBar(); return; }
+      if (b.dataset.nag === "file") { saveBackupFile(function (t) { msg(t); say(t); }); return; }
+      say("Backing up to Google Drive...");
+      gdSignIn().then(gdBackup).then(function () { gdMsg("Backed up to Google Drive."); }, function (e) { say(gdErr(e)); });
+    });
+    function gdUi() {
+      var row = document.getElementById("gdRow"); row.hidden = !GID; if (!GID) return;
+      var c = gdCfg(), on = !!c;
+      document.getElementById("gdState").textContent = on ? "Google Drive: connected" + (c.email ? " as " + c.email : "") + ". Last Drive backup: " + ago(c.last) + "." : "Back up to your own Google Drive:";
+      document.getElementById("gdConnect").hidden = on;
+      ["gdNow", "gdRestore", "gdOff"].forEach(function (id) { document.getElementById(id).hidden = !on; });
+      document.getElementById("gdAutoL").hidden = !on; document.getElementById("gdAuto").checked = !!(c && c.auto);
+    }
+    window.__backupUi = function () {
+      document.getElementById("bkLast").textContent = "Last backup: " + ago(lastBackup()) + ".";
+      gdUi(); nagBar();
+    };
+    if (GID && gdCfg()) loadGis().catch(function () {});
+    document.getElementById("gdConnect").onclick = function () {
+      gdMsg("Opening Google sign-in...");
+      gdSignIn().then(function () {
+        return gdFetch("GET", "https://www.googleapis.com/drive/v3/about?fields=user(emailAddress)").then(function (a) { return a && a.user && a.user.emailAddress; }, function () { return ""; });
+      }).then(function (email) {
+        gdSet(Object.assign({ auto: true }, gdCfg() || {}, { email: email || "" })); gdUi(); gdMsg("Connected. Backing up...");
+        return gdBackup();
+      }).then(function () { gdMsg("Connected and backed up to the “" + GFOLDER + "” folder in your Google Drive."); }, function (e) { gdMsg(gdErr(e)); gdUi(); });
+    };
+    document.getElementById("gdNow").onclick = function () {
+      gdMsg("Backing up..."); gdSignIn().then(gdBackup).then(function () { gdMsg("Backed up to Google Drive."); }, function (e) { gdMsg(gdErr(e)); });
+    };
+    document.getElementById("gdAuto").onchange = function () { var c = gdCfg() || {}; c.auto = this.checked; gdSet(c); };
+    document.getElementById("gdOff").onclick = function () {
+      if (!confirm("Disconnect Google Drive? Backups already in your Drive stay there.")) return;
+      try { if (gtok.token && gisReady()) google.accounts.oauth2.revoke(gtok.token, function () {}); } catch (e) {}
+      gtok = { token: null, exp: 0 }; try { sessionStorage.removeItem("ccl-gtok"); } catch (e) {}
+      gdSet(null); window.__backupUi(); gdMsg("Disconnected.");
+    };
+    document.getElementById("gdRestore").onclick = function () {
+      gdMsg("Looking for backups...");
+      gdSignIn().then(gdFolder).then(gdList).then(function (fs) {
+        gdMsg("");
+        if (!fs.length) { gdMsg("No backups found in your Google Drive yet."); return; }
+        var o = overlay('<b style="font-size:16px">Restore from Google Drive</b><p style="margin:8px 0">Pick a backup. It replaces everything saved in this browser.</p><div style="max-height:50vh;overflow:auto;display:flex;flex-direction:column;gap:6px">' +
+          fs.slice(0, 20).map(function (f, i) { var d = new Date(f.createdTime); return '<button type="button" data-gdi="' + i + '" style="text-align:left;padding:8px;border-radius:6px;border:1px solid #9ab0ad;background:#fff;cursor:pointer">' + d.toLocaleString() + (f.size ? ' <span style="color:#6b7b79">(' + Math.max(1, Math.round(f.size / 1024)) + " KB)</span>" : "") + "</button>"; }).join("") +
+          '</div><div style="margin-top:12px;text-align:right"><button type="button" id="gdCancel" style="padding:6px 12px;border-radius:6px;border:1px solid #9ab0ad;background:#fff;cursor:pointer">Cancel</button></div>');
+        o.querySelector("#gdCancel").onclick = function () { o.remove(); };
+        o.addEventListener("click", function (ev) {
+          var b = ev.target.closest("[data-gdi]"); if (!b) return; var f = fs[Number(b.dataset.gdi)]; o.remove(); gdMsg("Downloading backup...");
+          gdFetch("GET", GAPI + "/" + f.id + "?alt=media").then(function (j) { gdMsg(""); restoreFrom(j, gdMsg); }, function (e) { gdMsg(gdErr(e)); });
+        });
+      }, function (e) { gdMsg(gdErr(e)); });
+    };
+    // When a backup is due and Drive is connected with auto on: back up by itself if this tab is still signed in to Google; otherwise the reminder bar offers one tap.
+    function autoDrive() {
+      var c = gdCfg(); if (!GID || !c || !c.auto || !backupDue() || !gdHasToken()) return;
+      gdBackup().then(function () { gdMsg("Backed up to Google Drive by itself."); }, function () {});
+    }
+    ready.then(function () { setTimeout(function () { window.__backupUi(); autoDrive(); }, 1500); });
+    setInterval(function () { window.__backupUi(); autoDrive(); }, 30 * 60000);
     var shMsg = function (t) { document.getElementById("shMsg").textContent = t; };
     window.__shareUi = function () {
       var lines = Object.keys(shared()), n = pendingPaths().length;
