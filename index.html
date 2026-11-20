@@ -324,8 +324,6 @@ window.CCL_GOOGLE_CLIENT_ID = "";
       vals = vals.map(function (p) { return p[k]; });
       var best = order.slice().sort(function (a, b) { return cnt[b.toLowerCase()] - cnt[a.toLowerCase()]; })[0] || "";
       if (k === "product" && order.some(function (v) { return v === "Fetal Bovine Serum"; })) best = "Fetal Bovine Serum";
-      // A bottle in use is rarely already expired: if some passes read a date in the future, prefer the most-read future date.
-      if (k === "expiry") { var td = new Date().toISOString().slice(0, 10), fut = order.filter(function (v) { return v >= td; }); if (fut.length && best < td) best = fut.sort(function (a, b) { return cnt[b.toLowerCase()] - cnt[a.toLowerCase()]; })[0]; }
       if (k === "product" && kind !== "fbs") { var bm = order.filter(function (v) { return /DMEM|RPMI|F-?12|MEM\b|IMDM|McCoy|Leibovitz|Neurobasal|Medium 199/i.test(v); }); if (bm.length) best = bm.sort(function (a, b) { return cnt[b.toLowerCase()] - cnt[a.toLowerCase()] || b.length - a.length; })[0]; }
       out[k] = best;
       if (best && (always[k] || order.length > 1 || vals.length < 2)) out.unsure.push(k);
@@ -2588,9 +2586,9 @@ window.CCL_GOOGLE_CLIENT_ID = "";
       var m = { dissType: ["product", r.product], dissExp: ["expiry", ex], dissBrand: ["brand", r.brand], dissCat: ["catalog", r.catalog], dissConc: ["concentration", r.concentration] }, got = [];
       Object.keys(m).forEach(function (k) {
         var v = String(m[k][1] || "").trim(); if (!v) return;
-        var el = $("f_" + k); el.value = v; if (unsure.indexOf(m[k][0]) >= 0) el.classList.add("warn"); got.push(v);
+        var el = $("f_" + k); el.value = v; if (unsure.indexOf(m[k][0]) >= 0 || (k === "dissExp" && expired(v))) el.classList.add("warn"); got.push(v);
       });
-      out.innerHTML = got.length ? "Filled in: " + esc(got.join(" | ")) + "<br><b>Check against the bottle before saving the entry.</b>" + (unsure.length ? " Amber fields were hard to read." : "") + (WEB ? " The photo is saved with this entry." : "") : WEB ? "Couldn't read this photo. The photo is saved." : "Nothing readable found.";
+      out.innerHTML = got.length ? "Filled in: " + esc(got.join(" | ")) + "<br><b>Check against the bottle before saving the entry.</b>" + expMsg(ex) + (unsure.length ? " Amber fields were hard to read." : "") + (WEB ? " The photo is saved with this entry." : "") : WEB ? "Couldn't read this photo. The photo is saved." : "Nothing readable found.";
     } catch (e) {
       out.textContent = e && e.code === "not_granted" ? (WEB ? "Couldn't read this photo. The photo is saved." : "Scanning was not allowed.") : WEB ? "Couldn't read this photo. The photo is saved." : "Could not read that photo" + (e && e.message ? ": " + e.message : ".");
     }
@@ -3009,9 +3007,9 @@ window.CCL_GOOGLE_CLIENT_ID = "";
       var exp = /^\d{4}-\d{2}-\d{2}$/.test(String(r.expiry || "")) ? r.expiry : "";
       var vals = { item: r.product, brand: r.brand || r.manufacturer, supplier: r.supplier, cat: r.catalog, lot: r.lot, exp: exp, stock: r.stock }, got = [];
       s._warn = {};
-      Object.keys(map).forEach(function (src) { var k = map[src], v = String(vals[k] || "").trim(); if (!v) return; s[k] = v; got.push(v); if (unsure.indexOf(src) >= 0) s._warn[k] = true; });
+      Object.keys(map).forEach(function (src) { var k = map[src], v = String(vals[k] || "").trim(); if (!v) return; s[k] = v; got.push(v); if (unsure.indexOf(src) >= 0 || (k === "exp" && expired(v))) s._warn[k] = true; });
       if (!WEB) { blobs.forEach(function (b) { state.pending.push({ blob: b, kind: "supp" + (i + 1) }); }); renderMPhotos(); }
-      s._msg = (got.length ? "Filled in: " + esc(got.join(" | ")) + ". <b>Check against the bottle before saving.</b>" + (unsure.length ? " Amber fields were hard to read." : "") + (WEB ? " The photo is saved." : "") : WEB ? "Couldn't read this photo. The photo is saved." : "Nothing readable found.") + " Type the final concentration yourself.";
+      s._msg = (got.length ? "Filled in: " + esc(got.join(" | ")) + ". <b>Check against the bottle before saving.</b>" + expMsg(exp) + (unsure.length ? " Amber fields were hard to read." : "") + (WEB ? " The photo is saved." : "") : WEB ? "Couldn't read this photo. The photo is saved." : "Nothing readable found.") + " Type the final concentration yourself.";
     } catch (e) {
       s._msg = e && e.code === "not_granted" ? "Scanning was not allowed." : WEB ? "Couldn't read this photo. The photo is saved." : "Could not read that photo" + (e && e.message ? ": " + esc(e.message) : ".");
     }
@@ -3088,6 +3086,9 @@ window.CCL_GOOGLE_CLIENT_ID = "";
   }
   // "P3" on a vial means frozen at passage 3; once thawed the cells are passage 4.
   function nextPassage(p) { var m = String(p || "").match(/^\s*(p\s*)?(\d+)\s*$/i); return m ? (m[1] ? "P" : "") + (Number(m[2]) + 1) : ""; }
+  // An expiry date read from a label that is already past: the field turns amber and the message says so, to catch expired reagents.
+  function expired(d) { return !!d && /^\d{4}-\d{2}-\d{2}$/.test(d) && d < today(); }
+  function expMsg(d) { return expired(d) ? ' <b class="badt">\u26a0 Expired on ' + esc(d) + ": check the bottle before using it.</b>" : ""; }
   function put(id, v, warn) { if (!v) return; var el = $(id); el.value = v; if (warn) el.classList.add("warn"); }
   function addTo(id, v) { if (!v) return; var el = $(id); el.value = el.value ? el.value + "; " + v : v; }
   // ---------- scan my own handwritten media bottle ----------
@@ -3170,17 +3171,17 @@ window.CCL_GOOGLE_CLIENT_ID = "";
       if (kind === "auto") kind = /DMEM|RPMI|\bMEM\b|EMEM|F-?12|Ham|Opti-?MEM|McCoy|IMDM|Leibovitz|Neurobasal|medium|media/i.test(prod) ? "base" : /fetal|bovine|\bFBS\b|\bFCS\b|serum/i.test(prod) ? "fbs" : "other";
       if (kind === "base") {
         put("m_base", prod, u("product")); put("m_basebrand", brand, u("brand")); put("m_basesupp", sup, u("supplier")); put("m_basecat", cat, u("catalog"));
-        put("m_baselot", lot, u("lot")); put("m_baseexp", exp, u("expiry"));
+        put("m_baselot", lot, u("lot")); put("m_baseexp", exp, u("expiry") || expired(exp));
       } else if (kind === "fbs") {
         put("m_fbsitem", prod, u("product")); put("m_fbsbrand", brand, u("brand")); put("m_fbssupp", sup, u("supplier")); put("m_fbscat", cat, u("catalog"));
-        put("m_fbslot", lot, u("lot")); put("m_fbsexp", exp, u("expiry"));
+        put("m_fbslot", lot, u("lot")); put("m_fbsexp", exp, u("expiry") || expired(exp));
       }
       if (!WEB) { blobs.forEach(function (b) { state.pending.push({ blob: b, kind: kind }); }); renderMPhotos(); }
       var url = URL.createObjectURL(blob);
       var read = [prod && "Item: " + prod, brand && "Brand: " + brand, sup && "Supplier: " + sup, cat && "Cat #: " + cat, lot && "Lot: " + lot, exp && "Expiry: " + exp].filter(Boolean).join(" | ");
       if (WEB && !read) { out.textContent = "Couldn't read this photo. The photo is saved."; btn.classList.remove("busy"); this.value = ""; return; }
       read = read || "Nothing readable found.";
-      out.innerHTML = '<img alt="Scanned bottle" src="' + url + '"><div>' + (blobs.length > 1 ? blobs.length + " photos read. " : "") + esc(read) + "<br>" + (kind === "base" || kind === "fbs" ? "<b>Check against the bottle before saving.</b>" + (unsure.length ? " Amber fields were hard to read." : "") : WEB ? "Not filled in: I couldn't tell if this is FBS or a base medium. Use Upload next to Base medium or FBS instead." : "") + (WEB && exp && exp < today() ? " <b>The expiry it read (" + esc(exp) + ") is already past: check it on the bottle.</b>" : "") + (WEB ? " The photo is saved with the batch." : "") + "</div>";
+      out.innerHTML = '<img alt="Scanned bottle" src="' + url + '"><div>' + (blobs.length > 1 ? blobs.length + " photos read. " : "") + esc(read) + "<br>" + (kind === "base" || kind === "fbs" ? "<b>Check against the bottle before saving.</b>" + (unsure.length ? " Amber fields were hard to read." : "") : WEB ? "Not filled in: I couldn't tell if this is FBS or a base medium. Use Upload next to Base medium or FBS instead." : "") + expMsg(exp) + (WEB ? " The photo is saved with the batch." : "") + "</div>";
     } catch (e) {
       out.textContent = e && e.code === "not_granted" ? (WEB ? "Couldn't read this photo. The photo is saved." : "Scanning was not allowed.") : WEB ? "Couldn't read this photo. The photo is saved." : "Could not read that photo" + (e && e.message ? ": " + e.message : ".");
     }
