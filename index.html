@@ -199,7 +199,11 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     var SEP = "[\\s\\]\\)\\|:#.\\-]*";
     if ((m = one.match(new RegExp("(?:\\blot\\b|\\bbatch\\b|\\[\\s*lo[tl1]?\\s*[\\]\\)])" + SEP + "(?:no\\.?|number)?" + SEP + "([A-Z0-9][A-Z0-9\\-\\/.]{3,})", "i")))) r.lot = m[1].replace(/[.\-\/]+$/, "");
     if ((m = one.match(new RegExp("(?:\\bcat(?:alog(?:ue)?)?(?![a-z])\\.?\\s*(?:no\\.?|number|#)?|\\bref(?:erence)?\\b|\\[\\s*ref\\s*[\\]\\)]|item\\s*(?:no\\.?|#)|product\\s*(?:no\\.?|#|code))" + SEP + "([A-Z0-9][A-Z0-9\\-\\/.]{2,})", "i")))) r.catalog = m[1].replace(/[.\-\/]+$/, "");
+    // Barcode text (GS1): (10) is the lot, (17) the expiry as YYMMDD.
+    if (!r.lot && (m = one.match(/\(10\)\s*([A-Z0-9][A-Z0-9\-]{2,})/i))) r.lot = m[1];
     if (!r.catalog && (m = one.match(/ATCC\W{0,4}\s*(\d{2}-\d{4})/i))) r.catalog = m[1];
+    if (!r.catalog && (m = one.match(/\b([A-Z]\d{7})\b/))) r.catalog = m[1]; // Gibco style, e.g. A5669701
+    if (!r.catalog && (m = one.match(/\b(S[HV]\d{5}\.\d{2}[A-Z]{0,3})\b/))) r.catalog = m[1]; // HyClone / Cytiva, e.g. SV30160.03
     if (!r.catalog && (m = one.match(/\b([A-Z]{0,2}\d{4,6}-\d{2,3})(?!-\d)\b/))) r.catalog = m[1];
     if (!r.lot && r.catalog) {
       for (var li = 0; li < lines.length && !r.lot; li++) {
@@ -207,11 +211,22 @@ window.CCL_GOOGLE_CLIENT_ID = "";
         for (var lj = li + 1; lj <= li + 2 && lj < lines.length && !r.lot; lj++) { var tk = lines[lj].split(/[\s\]\[()|]+/).filter(function (t) { return /^[A-Z0-9]{6,}$/i.test(t) && /\d/.test(t) && !/^\d{8}$/.test(t) && !/mL$/i.test(t); })[0]; if (tk) r.lot = tk; }
       }
     }
-    if ((m = one.match(/\bexp(?:iry|iration|\.)?\s*(?:date)?\s*[:.\-]?\s*([A-Za-z]{3,9}[\s\/\-.,]+\d{4}|\d{1,2}[\s\/\-.]+[A-Za-z]{3,9}[\s\/\-.,]+\d{4}|\d{4}[\/\-.]\d{1,2}(?:[\/\-.]\d{1,2})?|\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{2,4}|\d{1,2}[\/\-.]\d{4})/i))) { var e = parseExpiry(m[1]); r.expiry = e.iso; if (e.unsure) r.unsure.push("expiry"); }
+    if ((m = one.match(/\b(?:exp(?:iry|iration|\.)?|use\s*by|use\s*before|best\s*before)\s*(?:date)?\s*[:.\-]?\s*([A-Za-z]{3,9}[\s\/\-.,]+\d{4}|\d{1,2}[\s\/\-.]+[A-Za-z]{3,9}[\s\/\-.,]+\d{4}|\d{4}[\/\-.]\d{1,2}(?:[\/\-.]\d{1,2})?|\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{2,4}|\d{1,2}[\/\-.]\d{4})/i))) { var e = parseExpiry(m[1]); r.expiry = e.iso; if (e.unsure) r.unsure.push("expiry"); }
+    if (!r.expiry && (m = one.match(/\(17\)\s*(\d{2})(\d{2})(\d{2})/)) && +m[2] >= 1 && +m[2] <= 12) { var gy = 2000 + +m[1], gm = +m[2]; r.expiry = gy + "-" + p2(gm) + "-" + p2(+m[3] || lastDay(gy, gm)); }
     if (!r.expiry) {
-      var ds = [], rx = /\b(20\d{2})[-\/.](\d{2})[-\/.](\d{2})\b/g, dm;
-      while ((dm = rx.exec(one))) if (+dm[2] >= 1 && +dm[2] <= 12 && +dm[3] >= 1 && +dm[3] <= 31) ds.push(dm[1] + "-" + dm[2] + "-" + dm[3]);
-      if (ds.length) r.expiry = ds.sort().pop(); // a label may also show a made-on date; the latest date is the expiry
+      // Many labels print the use-by date next to an hourglass symbol, with no word. Take every date on a line that is not a made-on or retest date; the latest is the expiry.
+      // A year and month alone (e.g. 2031-02) means the last day of that month.
+      var ds = [];
+      lines.forEach(function (ln) {
+        if (/mfg|manuf|mfd|made|produc|retest|re-test|\(11\)/i.test(ln)) return;
+        var rx = /\b(20\d{2})[-\/.](\d{1,2})(?:[-\/.](\d{1,2}))?(?![\d\-\/.]*\d)/g, dm;
+        while ((dm = rx.exec(ln))) { var yy = +dm[1], mm = +dm[2], dd = dm[3] ? +dm[3] : lastDay(yy, mm); if (mm >= 1 && mm <= 12 && dd >= 1 && dd <= 31) ds.push(yy + "-" + p2(mm) + "-" + p2(dd)); }
+        var rx2 = /\b(\d{1,2})[\s\-\/.]([A-Za-z]{3})[A-Za-z]*[\s\-\/.,]+(20\d{2})\b/g;
+        while ((dm = rx2.exec(ln))) if (MONTHS[dm[2].toLowerCase()]) ds.push(dm[3] + "-" + p2(MONTHS[dm[2].toLowerCase()]) + "-" + p2(+dm[1]));
+        var rx3 = /\b(0?[1-9]|1[0-2])[\/.](20\d{2})\b/g;
+        while ((dm = rx3.exec(ln))) ds.push(dm[2] + "-" + p2(+dm[1]) + "-" + p2(lastDay(+dm[2], +dm[1])));
+      });
+      if (ds.length) r.expiry = ds.sort().pop();
     }
     for (var i = 0; i < BRANDS.length; i++) if (new RegExp("\\b" + BRANDS[i].replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\b", "i").test(one)) { r.brand = BRANDS[i]; break; }
     var cand = lines.filter(function (l) { return l.indexOf("+") < 0; }), rx = PRODUCT_RX;
@@ -219,11 +234,43 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     else if (which === "base") { rx = /(DMEM|RPMI|\bMEM\b|EMEM|F-?12|Ham|Opti-?MEM|McCoy|IMDM|Leibovitz|\bMedium\b|\bMedia\b)/i; cand = cand.filter(function (l) { return !/FBS|serum|Penicillin|Strep/i.test(l); }); }
     var pl = cand.filter(function (l) { return rx.test(l); })[0];
     if (pl) { var pm = pl.replace(/^[^A-Za-z0-9]+/, "").match(/^[A-Za-z0-9][A-Za-z0-9:\/\-.'%(), ]*/); r.product = pm ? pm[0].replace(/[\s.:,\-]+$/, "").replace(/^[A-Za-z0-9]\s+(?=\S{3,})/, "").replace(/\s+[A-Za-z]$/, "") : ""; }
+    if (/fetal\s+bovine\s+serum|foetal\s+bovine\s+serum/i.test(one) && (which === "fbs" || !r.product || /fbs|serum/i.test(r.product))) r.product = "Fetal Bovine Serum";
     if (kind === "dissociation") { var pc = one.match(/\b(\d+(?:\.\d+)?)\s?%/), xc = one.match(/\b(\d+(?:\.\d+)?)\s?X\b/); r.concentration = pc && xc ? pc[1] + "% (" + xc[1] + "X)" : pc ? pc[1] + "%" : xc ? xc[1] + "X" : ""; }
     if (kind === "supplement") { r.stock = (m = one.match(/\b(\d+(?:\.\d+)?\s?(?:X|mg\/mL|µg\/mL|ug\/mL|ng\/mL|mM|U\/mL|%)\b)/i)) ? m[1].replace(/\s/g, "") : ""; }
     // engine confidence: a field is unsure when a word it came from was read with low confidence
     var low = function (v) { var key = String(v).replace(/[^A-Za-z0-9]/g, "").toLowerCase(); if (!key) return false; return (ocr.words || []).some(function (w) { var t = String(w.text || "").replace(/[^A-Za-z0-9]/g, "").toLowerCase(); return t.length > 2 && (key.indexOf(t) >= 0 || t.indexOf(key) >= 0) && w.confidence < 80; }); };
     ["product", "brand", "catalog", "lot", "expiry"].forEach(function (k) { if (r[k] && (low(r[k]) || (k === "lot" || k === "catalog") && !/^[A-Z0-9\-\/.]+$/.test(r[k])) && r.unsure.indexOf(k === "product" ? "product" : k) < 0) r.unsure.push(k); });
+    return r;
+  }
+  // Printed vial label: the date is the freeze date, anything that looks like medium is the freezing media,
+  // and the cell line is matched against the cell lines already in the app (window.__cclLines).
+  var MEDIA_RX = /DMEM|RPMI|\bMEM\b|EMEM|F-?12|Opti-?MEM|IMDM|\bFBS\b|\bFCS\b|serum|DMSO|glycerol|medium|media|CryoStor|Bambanker|HyCryo|mFreSR|freez/i;
+  function parseVial(ocr) {
+    var key = function (x) { return String(x || "").toLowerCase().replace(/[^a-z0-9]/g, ""); };
+    var lines = String(ocr.text || "").split(/\n/).map(function (l) { return l.replace(/^[^A-Za-z0-9(]+/, "").replace(/\s+/g, " ").trim(); }).filter(Boolean);
+    var all = key(lines.join(" ")), r = { cellLine: "", passage: "", frozenDate: "", frozenBy: "", freezeMedia: "", vialId: "", unsure: [] }, m;
+    var known = (window.__cclLines || []).slice().sort(function (a, b) { return key(b).length - key(a).length; });
+    for (var i = 0; i < known.length; i++) if (key(known[i]) && all.indexOf(key(known[i])) >= 0) { r.cellLine = known[i]; break; }
+    if (!r.cellLine && lines[0]) { r.cellLine = lines[0].split(/\s*[\/,]\s*|\s+P\d/i)[0]; r.unsure.push("cellLine"); }
+    var one = lines.join("\n");
+    if ((m = one.match(/(?:^|[\s\/,_\-])P\.?\s?(\d{1,3})\b/i)) || (m = one.match(/passage\s*(?:no\.?|#)?\s*(\d{1,3})/i))) r.passage = "P" + m[1];
+    var dm, ds = [];
+    if ((dm = one.match(/\b(20\d{2})[-\/.](\d{1,2})[-\/.](\d{1,2})\b/))) ds.push(dm[1] + "-" + p2(+dm[2]) + "-" + p2(+dm[3]));
+    else if ((dm = one.match(/\b(\d{1,2})[\s\-\/.]([A-Za-z]{3})[A-Za-z]*[\s\-\/.,]+(20\d{2})\b/)) && MONTHS[dm[2].toLowerCase()]) ds.push(dm[3] + "-" + p2(MONTHS[dm[2].toLowerCase()]) + "-" + p2(+dm[1]));
+    else if ((dm = one.match(/\b(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2,4})\b/))) { var e = parseExpiry(dm[0]); if (e.iso) ds.push(e.iso); else r.unsure.push("frozenDate"); }
+    if (ds.length) r.frozenDate = ds[0];
+    var med = [];
+    lines.forEach(function (ln) {
+      if (r.cellLine && key(ln).indexOf(key(r.cellLine)) >= 0 && !MEDIA_RX.test(ln)) return;
+      if (/ATCC|#\s*CRL|\bCRL-\d/i.test(ln) && !MEDIA_RX.test(ln.replace(/ATCC/gi, ""))) return;
+      if (MEDIA_RX.test(ln)) med.push(ln);
+    });
+    if (med.length) {
+      var fm = med.join(" ").replace(/\s*\+\s*/g, " + ").replace(/\s+/g, " ").replace(/[+\s]+$/, "");
+      // a smudge before a number can add a digit (110% for 10%): any percentage over 100 loses its first digit and is marked for checking
+      fm = fm.replace(/\b(\d{3,})%/g, function (all2, n) { var v = n; while (+v > 100 && v.length > 1) v = v.slice(1); if (v !== n && r.unsure.indexOf("freezeMedia") < 0) r.unsure.push("freezeMedia"); return v + "%"; });
+      r.freezeMedia = fm;
+    }
     return r;
   }
   // One photo is read several ways (label cut out and enlarged, whole photo, plain); a field is trusted only when the passes agree.
@@ -253,12 +300,29 @@ window.CCL_GOOGLE_CLIENT_ID = "";
       var vals = list.map(function (p) { return p[k]; }).filter(Boolean), cnt = {}, order = [];
       vals.forEach(function (v) { var key = v.toLowerCase(); if (!(key in cnt)) { cnt[key] = 0; order.push(v); } cnt[key]++; });
       var best = order.slice().sort(function (a, b) { return cnt[b.toLowerCase()] - cnt[a.toLowerCase()]; })[0] || "";
+      if (k === "product" && order.some(function (v) { return v === "Fetal Bovine Serum"; })) best = "Fetal Bovine Serum";
       out[k] = best;
       if (best && (always[k] || order.length > 1 || vals.length < 2)) out.unsure.push(k);
     });
     return out;
   }
   function readDevice(blobs, kind, prompt) {
+    if (kind === "vial") {
+      // Each photo (whole and zoomed parts) is read on its own; the reading with the most fields wins, gaps are filled from the others.
+      return getWorker().then(function (w) {
+        return w.setParameters({ tessedit_pageseg_mode: "6" }).then(function () {
+          var res = [], chain = Promise.resolve();
+          blobs.forEach(function (b) { chain = chain.then(function () { return w.recognize(b); }).then(function (x) { res.push(parseVial({ text: x.data.text || "" })); }); });
+          return chain.then(function () {
+            var score = function (o) { return ["cellLine", "passage", "frozenDate", "freezeMedia"].filter(function (k) { return o[k] && (k !== "cellLine" || o.unsure.indexOf("cellLine") < 0); }).length; };
+            res.sort(function (a, b) { return score(b) - score(a); });
+            var best = res[0] || parseVial({ text: "" });
+            res.slice(1).forEach(function (o) { ["cellLine", "passage", "frozenDate", "freezeMedia"].forEach(function (k) { if (!best[k] && o[k]) best[k] = o[k]; }); });
+            return best;
+          });
+        });
+      });
+    }
     var which = /fetal bovine serum/i.test(prompt || "") ? "fbs" : /base medium/i.test(prompt || "") ? "base" : "other";
     return getWorker().then(function (w) {
       return w.setParameters({ tessedit_pageseg_mode: "6" }).then(function () {
@@ -276,7 +340,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     if (/steps \(an array of strings/.test(p)) return "protocol"; if (/cellLine/.test(p)) return "vial"; if (/fbsPercent/.test(p)) return "mine";
     if (/concentration \(as printed/.test(p)) return "dissociation"; if (/stock \(stock concentration/.test(p)) return "supplement"; if (/catalog \(catalog or cat # as printed\)/.test(p)) return "bottle"; return "other";
   }
-  var DEVICE_KINDS = { bottle: 1, supplement: 1, dissociation: 1 };
+  var DEVICE_KINDS = { bottle: 1, supplement: 1, dissociation: 1, vial: 1 };
   function ocrMode() { return ls("ccl-ocr") || (readerUrl() ? "ai" : "device"); }
   var sample = {
     limits: function () { return Promise.resolve({ images: { maxCount: 8, mediaTypes: ["image/jpeg", "image/png", "image/webp"] } }); },
@@ -2450,18 +2514,18 @@ window.CCL_GOOGLE_CLIENT_ID = "";
         put(m[0], v, unsure.indexOf(m[1]) >= 0); got.push(v);
       });
       try {
-        if (state.assets && window.DataTransfer) { var vb = tiledV ? await downscale(files[0], 1800) : blobs[0]; var dt = new DataTransfer(); dt.items.add(new File([vb], "vial.jpg", { type: "image/jpeg" })); $("f_photo").files = dt.files; if (!$("f_photoDesc").value) $("f_photoDesc").value = "vial"; }
+        if (!WEB && state.assets && window.DataTransfer) { var vb = tiledV ? await downscale(files[0], 1800) : blobs[0]; var dt = new DataTransfer(); dt.items.add(new File([vb], "vial.jpg", { type: "image/jpeg" })); $("f_photo").files = dt.files; if (!$("f_photoDesc").value) $("f_photoDesc").value = "vial"; }
       } catch (e2) {}
       var norm = function (x) { return String(x || "").toLowerCase().replace(/[^a-z0-9]/g, ""); }, cl = norm(r.cellLine), tb = norm(state.tab);
       var mismatch = cl && tb && cl.indexOf(tb) < 0 && tb.indexOf(cl) < 0;
-      out.innerHTML = (got.length ? "Filled in: " + esc(got.join(" | ")) + "<br>" : "Nothing readable found.<br>") +
+      out.innerHTML = (got.length ? "Filled in: " + esc(got.join(" | ")) + "<br>" : (WEB ? "Couldn't read this photo. The photo is saved.<br>" : "Nothing readable found.<br>")) +
         (r.cellLine ? "Label cell line: " + esc(r.cellLine) + ". " : "") +
         (np ? "The vial says " + esc(String(r.passage).trim()) + " (the passage it was frozen at), so this thaw is entered as " + esc(np) + ". " : "") +
         (mismatch ? '<b class="badt">This does not match the ' + esc(state.tab) + " tab. Check you have the right vial.</b> " : "") +
         (got.length ? "<b>Check against the vial before saving.</b>" : "") + (unsure.length ? " Amber fields were hard to read." : "") +
         (state.assets ? " The photo is attached to this entry." : "");
     } catch (e) {
-      out.textContent = e && e.code === "not_granted" ? "Scanning was not allowed." : "Could not read that photo" + (e && e.message ? ": " + e.message : ".");
+      out.textContent = e && e.code === "not_granted" ? (WEB ? "Couldn't read this photo. The photo is saved." : "Scanning was not allowed.") : WEB ? "Couldn't read this photo. The photo is saved." : "Could not read that photo" + (e && e.message ? ": " + e.message : ".");
     }
     btn.classList.remove("busy"); this.value = "";
   });
@@ -2487,9 +2551,9 @@ window.CCL_GOOGLE_CLIENT_ID = "";
         var v = String(m[k][1] || "").trim(); if (!v) return;
         var el = $("f_" + k); el.value = v; if (unsure.indexOf(m[k][0]) >= 0) el.classList.add("warn"); got.push(v);
       });
-      out.innerHTML = got.length ? "Filled in: " + esc(got.join(" | ")) + "<br><b>Check against the bottle before saving the entry.</b>" + (unsure.length ? " Amber fields were hard to read." : "") : "Nothing readable found.";
+      out.innerHTML = got.length ? "Filled in: " + esc(got.join(" | ")) + "<br><b>Check against the bottle before saving the entry.</b>" + (unsure.length ? " Amber fields were hard to read." : "") + (WEB ? " The photo is saved with this entry." : "") : WEB ? "Couldn't read this photo. The photo is saved." : "Nothing readable found.";
     } catch (e) {
-      out.textContent = e && e.code === "not_granted" ? "Scanning was not allowed." : "Could not read that photo" + (e && e.message ? ": " + e.message : ".");
+      out.textContent = e && e.code === "not_granted" ? (WEB ? "Couldn't read this photo. The photo is saved." : "Scanning was not allowed.") : WEB ? "Couldn't read this photo. The photo is saved." : "Could not read that photo" + (e && e.message ? ": " + e.message : ".");
     }
     btn.classList.remove("busy"); this.value = "";
   });
@@ -2839,27 +2903,23 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     $("suppSub").textContent = "one card per supplement, each can have a photo uploaded";
     $("scanKind").closest("label").hidden = true;
     var hint = function (id, text) { var row = $(id).closest(".scanrow"), sp = row && row.querySelector(".sub"); if (sp) sp.textContent = text; };
-    hint("vialScanFile", "Upload a photo of the vial label to keep it with this entry.");
-    hint("dissScanFile", "Upload a photo of the trypsin / dissociation reagent bottle to keep it with this entry.");
-    // On the web page, Upload only saves the photo: nothing is read. This runs before the reading handlers and stops them.
+    hint("vialScanFile", "Upload a photo of the vial label. It is kept with this entry, and printed text fills the freeze date, passage and freezing media. Get close so the label fills the photo.");
+    hint("dissScanFile", "Upload a photo of the trypsin / dissociation reagent bottle. It is kept with this entry, and printed text fills the reagent, brand, cat #, lot and expiry. Get close so the label fills the photo.");
+    $("scanOut").textContent = "The photo is saved with the batch. Printed text on the label (not handwriting) fills in the fields. Get close so the label fills the photo.";
+    // On the web page, Upload always saves the photo first; the reading handlers then try to read it and fill in the fields.
     document.addEventListener("change", async function (ev) {
       var t = ev.target; if (!t || t.type !== "file" || !t.files || !t.files.length) return;
       var toBatch = ["scanFile", "baseScanFile", "fbsScanFile"].indexOf(t.id) >= 0 || (t.dataset && t.dataset.scan != null);
       var toEntry = t.id === "vialScanFile" || t.id === "dissScanFile";
       if (!toBatch && !toEntry) return;
-      ev.stopPropagation(); ev.stopImmediatePropagation();
       var files = Array.prototype.slice.call(t.files);
-      var out = t.id === "scanFile" ? $("scanOut") : t.dataset.out ? $(t.dataset.out) : toEntry ? $(t.id === "vialScanFile" ? "vialScanOut" : "dissScanOut") : null;
       if (toBatch) {
-        for (var i = 0; i < files.length; i++) { var b; try { b = await downscale(files[i], 1800); } catch (e) { b = files[i]; } state.pending.push({ blob: b, kind: "photo" }); }
-        renderMPhotos(); t.value = "";
-        var names = newPhotoNames($("m_id").value, state.mKeep || [], state.pending.length);
-        if (out) out.textContent = (files.length > 1 ? files.length + " photos added" : "Photo added") + " under Batch ID (" + names.slice(-files.length).join(", ") + "). " + "It is saved with the batch when you press Save batch.";
+        var bl = []; for (var i = 0; i < files.length; i++) { try { bl.push(await downscale(files[i], 1800)); } catch (e) { bl.push(files[i]); } }
+        bl.forEach(function (b) { state.pending.push({ blob: b, kind: "photo" }); }); renderMPhotos();
       } else {
-        var dt = new DataTransfer(); dt.items.add(files[0]); $("f_photo").files = dt.files; t.value = "";
+        var dt = new DataTransfer(); dt.items.add(files[0]); $("f_photo").files = dt.files;
         if (!$("f_photoDesc").value.trim()) $("f_photoDesc").value = t.id === "vialScanFile" ? "vial label" : "dissociation reagent bottle";
         $("f_photo").dispatchEvent(new Event("change", { bubbles: true }));
-        if (out) out.textContent = "Photo attached to this entry (Photo, further down). It is saved when you press Save entry.";
       }
     }, true);
   })();
@@ -2911,10 +2971,10 @@ window.CCL_GOOGLE_CLIENT_ID = "";
       var vals = { item: r.product, brand: r.brand || r.manufacturer, supplier: r.supplier, cat: r.catalog, lot: r.lot, exp: exp, stock: r.stock }, got = [];
       s._warn = {};
       Object.keys(map).forEach(function (src) { var k = map[src], v = String(vals[k] || "").trim(); if (!v) return; s[k] = v; got.push(v); if (unsure.indexOf(src) >= 0) s._warn[k] = true; });
-      blobs.forEach(function (b) { state.pending.push({ blob: b, kind: "supp" + (i + 1) }); }); renderMPhotos();
-      s._msg = (got.length ? "Filled in: " + esc(got.join(" | ")) + ". <b>Check against the bottle before saving.</b>" + (unsure.length ? " Amber fields were hard to read." : "") : "Nothing readable found.") + " Type the final concentration yourself.";
+      if (!WEB) { blobs.forEach(function (b) { state.pending.push({ blob: b, kind: "supp" + (i + 1) }); }); renderMPhotos(); }
+      s._msg = (got.length ? "Filled in: " + esc(got.join(" | ")) + ". <b>Check against the bottle before saving.</b>" + (unsure.length ? " Amber fields were hard to read." : "") + (WEB ? " The photo is saved." : "") : WEB ? "Couldn't read this photo. The photo is saved." : "Nothing readable found.") + " Type the final concentration yourself.";
     } catch (e) {
-      s._msg = e && e.code === "not_granted" ? "Scanning was not allowed." : "Could not read that photo" + (e && e.message ? ": " + esc(e.message) : ".");
+      s._msg = e && e.code === "not_granted" ? "Scanning was not allowed." : WEB ? "Couldn't read this photo. The photo is saved." : "Could not read that photo" + (e && e.message ? ": " + esc(e.message) : ".");
     }
     renderSupp();
   }
@@ -3039,20 +3099,20 @@ window.CCL_GOOGLE_CLIENT_ID = "";
       (tiled ? [await downscale(files[0], 1800)] : blobs).forEach(function (b) { state.pending.push({ blob: b, kind: "media" }); }); renderMPhotos();
       out.innerHTML = (got.length ? "Filled in: " + esc(got.join(" | ")) + ".<br><b>Check against the bottle before saving.</b>" + (unsure.length ? " Amber fields were hard to read." : "") : "Nothing readable found.") + (notes.length ? "<br>" + notes.join(" ") : "");
     } catch (e) {
-      out.textContent = e && e.code === "not_granted" ? "Scanning was not allowed." : "Could not read that photo" + (e && e.message ? ": " + e.message : ".");
+      out.textContent = e && e.code === "not_granted" ? (WEB ? "Couldn't read this photo. The photo is saved." : "Scanning was not allowed.") : WEB ? "Couldn't read this photo. The photo is saved." : "Could not read that photo" + (e && e.message ? ": " + e.message : ".");
     }
     btn.classList.remove("busy");
   }
   $("scanFile").addEventListener("click", function () { $("scanOut").textContent = WEB ? "" : "Choose or take a photo of the label..."; });
   async function onBottleScan() {
     var files = Array.prototype.slice.call(this.files || [], 0, state.maxImages || 4); if (!files.length || !state.sample) return;
-    var kind = this.dataset.kind || $("scanKind").value, out = this.dataset.out ? $(this.dataset.out) : $("scanOut"), btn = this.parentNode;
+    var kind = this.dataset.kind || (WEB && this.id === "scanFile" ? "auto" : $("scanKind").value), out = this.dataset.out ? $(this.dataset.out) : $("scanOut"), btn = this.parentNode;
     if (kind === "mine") { var self = this; await scanMine(files, out, btn); self.value = ""; return; }
     btn.classList.add("busy"); out.textContent = "Reading the label" + (files.length > 1 ? "s..." : "...");
     try {
       var blobs = await Promise.all(files.map(function (f) { return downscale(f, 1800); }));
       var blob = blobs[0];
-      var kindName = { base: "base medium", fbs: "fetal bovine serum (FBS)", other: "a media supplement" }[kind];
+      var kindName = { base: "base medium", fbs: "fetal bovine serum (FBS)", other: "a media supplement", auto: "a cell culture reagent" }[kind];
       var r = await state.sample.json(
         (blobs.length > 1 ? "These are " + blobs.length + " photos of the same lab reagent bottle (different sides or angles). Combine them. " : "This is a photo of a lab reagent bottle label. ") +
         "The user says the bottle is " + kindName + ". " +
@@ -3067,6 +3127,8 @@ window.CCL_GOOGLE_CLIENT_ID = "";
       var unsure = Array.isArray(r.unsure) ? r.unsure : [];
       var u = function (k) { return unsure.indexOf(k) >= 0; };
       var prod = String(r.product || "").trim(), lot = String(r.lot || "").trim(), exp = /^\d{4}-\d{2}-\d{2}$/.test(String(r.expiry || "")) ? r.expiry : "", cat = String(r.catalog || "").trim(), brand = String(r.brand || r.manufacturer || "").trim(), sup = String(r.supplier || "").trim();
+      // Web page: the top Upload works out from the text whether the bottle is FBS or a base medium.
+      if (kind === "auto") kind = /fetal|bovine|\bFBS\b|\bFCS\b|serum/i.test(prod) ? "fbs" : /DMEM|RPMI|\bMEM\b|EMEM|F-?12|Ham|Opti-?MEM|McCoy|IMDM|Leibovitz|medium|media/i.test(prod) ? "base" : "other";
       if (kind === "base") {
         put("m_base", prod, u("product")); put("m_basebrand", brand, u("brand")); put("m_basesupp", sup, u("supplier")); put("m_basecat", cat, u("catalog"));
         put("m_baselot", lot, u("lot")); put("m_baseexp", exp, u("expiry"));
@@ -3074,12 +3136,14 @@ window.CCL_GOOGLE_CLIENT_ID = "";
         put("m_fbsitem", prod, u("product")); put("m_fbsbrand", brand, u("brand")); put("m_fbssupp", sup, u("supplier")); put("m_fbscat", cat, u("catalog"));
         put("m_fbslot", lot, u("lot")); put("m_fbsexp", exp, u("expiry"));
       }
-      blobs.forEach(function (b) { state.pending.push({ blob: b, kind: kind }); }); renderMPhotos();
+      if (!WEB) { blobs.forEach(function (b) { state.pending.push({ blob: b, kind: kind }); }); renderMPhotos(); }
       var url = URL.createObjectURL(blob);
-      var read = [prod && "Item: " + prod, brand && "Brand: " + brand, sup && "Supplier: " + sup, cat && "Cat #: " + cat, lot && "Lot: " + lot, exp && "Expiry: " + exp].filter(Boolean).join(" | ") || "Nothing readable found.";
-      out.innerHTML = '<img alt="Scanned bottle" src="' + url + '"><div>' + (blobs.length > 1 ? blobs.length + " photos read. " : "") + esc(read) + "<br><b>Check against the bottle before saving.</b>" + (unsure.length ? " Amber fields were hard to read." : "") + "</div>";
+      var read = [prod && "Item: " + prod, brand && "Brand: " + brand, sup && "Supplier: " + sup, cat && "Cat #: " + cat, lot && "Lot: " + lot, exp && "Expiry: " + exp].filter(Boolean).join(" | ");
+      if (WEB && !read) { out.textContent = "Couldn't read this photo. The photo is saved."; btn.classList.remove("busy"); this.value = ""; return; }
+      read = read || "Nothing readable found.";
+      out.innerHTML = '<img alt="Scanned bottle" src="' + url + '"><div>' + (blobs.length > 1 ? blobs.length + " photos read. " : "") + esc(read) + "<br>" + (kind === "base" || kind === "fbs" ? "<b>Check against the bottle before saving.</b>" + (unsure.length ? " Amber fields were hard to read." : "") : WEB ? "Not filled in: I couldn't tell if this is FBS or a base medium. Use Upload next to Base medium or FBS instead." : "") + (WEB ? " The photo is saved with the batch." : "") + "</div>";
     } catch (e) {
-      out.textContent = e && e.code === "not_granted" ? "Scanning was not allowed." : "Could not read that photo" + (e && e.message ? ": " + e.message : ".");
+      out.textContent = e && e.code === "not_granted" ? (WEB ? "Couldn't read this photo. The photo is saved." : "Scanning was not allowed.") : WEB ? "Couldn't read this photo. The photo is saved." : "Could not read that photo" + (e && e.message ? ": " + e.message : ".");
     }
     btn.classList.remove("busy"); this.value = "";
   }
@@ -3364,6 +3428,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     var onErr = function () { clearTimeout(slow); setStatus("Saved data could not be loaded."); };
     state.db.collection("lines").onSnapshot(function (s) {
       state.lines = s.docs.map(function (d) { var o = d.data(); return o ? Object.assign({}, o, { _id: d.id }) : o; }).filter(function (l) { return l && l.name; }).sort(function (a, b) { return (a.order || 0) - (b.order || 0); });
+      window.__cclLines = state.lines.map(function (l) { return l.name; }); // the web page reads vial labels against these names
       var saved = null; try { saved = localStorage.getItem("ccl-tab"); } catch (e) {}
       var names = state.lines.map(function (l) { return l.name; });
       state.linesReady = true;
