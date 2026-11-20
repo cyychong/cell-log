@@ -2837,6 +2837,31 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     set("baseScanFile", "Upload", "Upload a photo of the base medium bottle");
     set("fbsScanFile", "Upload", "Upload a photo of the FBS bottle");
     $("suppSub").textContent = "one card per supplement, each can have a photo uploaded";
+    $("scanKind").closest("label").hidden = true;
+    var hint = function (id, text) { var row = $(id).closest(".scanrow"), sp = row && row.querySelector(".sub"); if (sp) sp.textContent = text; };
+    hint("vialScanFile", "Upload a photo of the vial label to keep it with this entry.");
+    hint("dissScanFile", "Upload a photo of the trypsin / dissociation reagent bottle to keep it with this entry.");
+    // On the web page, Upload only saves the photo: nothing is read. This runs before the reading handlers and stops them.
+    document.addEventListener("change", async function (ev) {
+      var t = ev.target; if (!t || t.type !== "file" || !t.files || !t.files.length) return;
+      var toBatch = ["scanFile", "baseScanFile", "fbsScanFile"].indexOf(t.id) >= 0 || (t.dataset && t.dataset.scan != null);
+      var toEntry = t.id === "vialScanFile" || t.id === "dissScanFile";
+      if (!toBatch && !toEntry) return;
+      ev.stopPropagation(); ev.stopImmediatePropagation();
+      var files = Array.prototype.slice.call(t.files);
+      var out = t.id === "scanFile" ? $("scanOut") : t.dataset.out ? $(t.dataset.out) : toEntry ? $(t.id === "vialScanFile" ? "vialScanOut" : "dissScanOut") : null;
+      if (toBatch) {
+        for (var i = 0; i < files.length; i++) { var b; try { b = await downscale(files[i], 1800); } catch (e) { b = files[i]; } state.pending.push({ blob: b, kind: "photo" }); }
+        renderMPhotos(); t.value = "";
+        var names = newPhotoNames($("m_id").value, state.mKeep || [], state.pending.length);
+        if (out) out.textContent = (files.length > 1 ? files.length + " photos added" : "Photo added") + " under Batch ID (" + names.slice(-files.length).join(", ") + "). " + "It is saved with the batch when you press Save batch.";
+      } else {
+        var dt = new DataTransfer(); dt.items.add(files[0]); $("f_photo").files = dt.files; t.value = "";
+        if (!$("f_photoDesc").value.trim()) $("f_photoDesc").value = t.id === "vialScanFile" ? "vial label" : "dissociation reagent bottle";
+        $("f_photo").dispatchEvent(new Event("change", { bubbles: true }));
+        if (out) out.textContent = "Photo attached to this entry (Photo, further down). It is saved when you press Save entry.";
+      }
+    }, true);
   })();
   addCams();
   function renderSupp() {
@@ -3018,7 +3043,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     }
     btn.classList.remove("busy");
   }
-  $("scanFile").addEventListener("click", function () { $("scanOut").textContent = "Choose or take a photo of the label..."; });
+  $("scanFile").addEventListener("click", function () { $("scanOut").textContent = WEB ? "" : "Choose or take a photo of the label..."; });
   async function onBottleScan() {
     var files = Array.prototype.slice.call(this.files || [], 0, state.maxImages || 4); if (!files.length || !state.sample) return;
     var kind = this.dataset.kind || $("scanKind").value, out = this.dataset.out ? $(this.dataset.out) : $("scanOut"), btn = this.parentNode;
