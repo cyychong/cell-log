@@ -247,7 +247,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
   var MEDIA_RX = /DMEM|RPMI|\bMEM\b|EMEM|F-?12|Opti-?MEM|IMDM|\bFBS\b|\bFCS\b|serum|DMSO|glycerol|medium|media|CryoStor|Bambanker|HyCryo|mFreSR|freez/i;
   function parseVial(ocr) {
     var key = function (x) { return String(x || "").toLowerCase().replace(/[^a-z0-9]/g, ""); };
-    var lines = String(ocr.text || "").split(/\n/).map(function (l) { return l.replace(/^[^A-Za-z0-9(]+/, "").replace(/\s+/g, " ").trim(); }).filter(Boolean);
+    var lines = String(ocr.text || "").split(/\n/).map(function (l) { return l.replace(/^[^A-Za-z0-9(+]+/, "").replace(/\s+/g, " ").trim(); }).filter(Boolean);
     var all = key(lines.join(" ")), r = { cellLine: "", passage: "", frozenDate: "", frozenBy: "", freezeMedia: "", vialId: "", unsure: [] }, m;
     var known = (window.__cclLines || []).slice().sort(function (a, b) { return key(b).length - key(a).length; });
     for (var i = 0; i < known.length; i++) if (key(known[i]) && all.indexOf(key(known[i])) >= 0) { r.cellLine = known[i]; break; }
@@ -259,6 +259,22 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     else if ((dm = one.match(/\b(\d{1,2})[\s\-\/.]([A-Za-z]{3})[A-Za-z]*[\s\-\/.,]+(20\d{2})\b/)) && MONTHS[dm[2].toLowerCase()]) ds.push(dm[3] + "-" + p2(MONTHS[dm[2].toLowerCase()]) + "-" + p2(+dm[1]));
     else if ((dm = one.match(/\b(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2,4})\b/))) { var e = parseExpiry(dm[0]); if (e.iso) ds.push(e.iso); else r.unsure.push("frozenDate"); }
     if (ds.length) r.frozenDate = ds[0];
+    // A person's name (or initials) on the label is taken as who froze the vial. It is always marked for checking.
+    var NOT_NAME = /^(ATCC|CRL|FBS|FCS|DMSO|DMEM|EMEM|MEM|RPMI|IMDM|LN2|LN|VIAL|BOX|RACK|LOT|REF|EXP|CAT|NO|TUBE|CELLS?|STOCK|MEDIA|MEDIUM|FREEZING|FROZEN|PASSAGE|DATE|JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)$/i;
+    if ((m = one.match(/\b(?:frozen\s*by|froze|by|name|initials?)\b\s*[:\-]?\s*([A-Za-z][A-Za-z.'\- ]{1,30})/i))) r.frozenBy = m[1].trim();
+    if (!r.frozenBy) {
+      lines.forEach(function (ln) {
+        if (r.frozenBy || MEDIA_RX.test(ln) || /\d/.test(ln) || (r.cellLine && key(ln).indexOf(key(r.cellLine)) >= 0)) return;
+        ln.split(/\s*[\/,;|]\s*/).forEach(function (seg) {
+          seg = seg.replace(/[^A-Za-z.'\- ]/g, "").trim(); if (r.frozenBy || !seg) return;
+          var words = seg.split(/\s+/);
+          if (words.some(function (w) { return NOT_NAME.test(w.replace(/\./g, "")); })) return;
+          if (known.some(function (n) { return key(n) === key(seg); })) return;
+          if (/^[A-Z][a-z]+(?:[ .'\-]+[A-Z][a-z]*\.?){0,2}$/.test(seg) || /^[A-Z]\.?\s?[A-Z][a-z]+$/.test(seg) || /^[A-Z]{2,3}$/.test(seg)) r.frozenBy = seg;
+        });
+      });
+    }
+    if (r.frozenBy) r.unsure.push("frozenBy");
     var med = [];
     lines.forEach(function (ln) {
       if (r.cellLine && key(ln).indexOf(key(r.cellLine)) >= 0 && !MEDIA_RX.test(ln)) return;
@@ -314,10 +330,10 @@ window.CCL_GOOGLE_CLIENT_ID = "";
           var res = [], chain = Promise.resolve();
           blobs.forEach(function (b) { chain = chain.then(function () { return w.recognize(b); }).then(function (x) { res.push(parseVial({ text: x.data.text || "" })); }); });
           return chain.then(function () {
-            var score = function (o) { return ["cellLine", "passage", "frozenDate", "freezeMedia"].filter(function (k) { return o[k] && (k !== "cellLine" || o.unsure.indexOf("cellLine") < 0); }).length; };
+            var score = function (o) { return ["cellLine", "passage", "frozenDate", "freezeMedia", "frozenBy"].filter(function (k) { return o[k] && (k !== "cellLine" || o.unsure.indexOf("cellLine") < 0); }).length; };
             res.sort(function (a, b) { return score(b) - score(a); });
             var best = res[0] || parseVial({ text: "" });
-            res.slice(1).forEach(function (o) { ["cellLine", "passage", "frozenDate", "freezeMedia"].forEach(function (k) { if (!best[k] && o[k]) best[k] = o[k]; }); });
+            res.slice(1).forEach(function (o) { ["cellLine", "passage", "frozenDate", "freezeMedia", "frozenBy"].forEach(function (k) { if (!best[k] && o[k]) best[k] = o[k]; }); });
             return best;
           });
         });
