@@ -234,6 +234,9 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     else if (which === "base") { rx = /(DMEM|RPMI|\bMEM\b|EMEM|F-?12|Ham|Opti-?MEM|McCoy|IMDM|Leibovitz|\bMedium\b|\bMedia\b)/i; cand = cand.filter(function (l) { return !/FBS|serum|Penicillin|Strep/i.test(l); }); }
     var pl = cand.filter(function (l) { return rx.test(l); })[0];
     if (pl) { var pm = pl.replace(/^[^A-Za-z0-9]+/, "").match(/^[A-Za-z0-9][A-Za-z0-9:\/\-.'%(), ]*/); r.product = pm ? pm[0].replace(/[\s.:,\-]+$/, "").replace(/^[A-Za-z0-9]\s+(?=\S{3,})/, "").replace(/\s+[A-Za-z]$/, "") : ""; }
+    // A printed base-medium name wins over anything else (a handwritten "+10% FBS" note must not make the bottle FBS).
+    var BASE_RX = /(KnockOut\s*DMEM|DMEM\s*[:\/]?\s*F[\s-]?12|Advanced\s*DMEM|DMEM|RPMI(?:[\s-]*1640)?|Ham'?s\s*F-?12|Opti-?MEM|McCoy'?s\s*5A|IMDM|Leibovitz'?s?\s*L-?15|Neurobasal|Medium\s*199|\bEMEM\b|\bMEM\b(?:\s*alpha)?)/i;
+    if (which !== "fbs") { var bl = lines.filter(function (l) { return BASE_RX.test(l); })[0]; if (bl) r.product = bl.match(BASE_RX)[1].replace(/\s+/g, " ").trim(); }
     if (/fetal\s+bovine\s+serum|foetal\s+bovine\s+serum/i.test(one) && (which === "fbs" || !r.product || /fbs|serum/i.test(r.product))) r.product = "Fetal Bovine Serum";
     if (kind === "dissociation") { var pc = one.match(/\b(\d+(?:\.\d+)?)\s?%/), xc = one.match(/\b(\d+(?:\.\d+)?)\s?X\b/); r.concentration = pc && xc ? pc[1] + "% (" + xc[1] + "X)" : pc ? pc[1] + "%" : xc ? xc[1] + "X" : ""; }
     if (kind === "supplement") { r.stock = (m = one.match(/\b(\d+(?:\.\d+)?\s?(?:X|mg\/mL|µg\/mL|ug\/mL|ng\/mL|mM|U\/mL|%)\b)/i)) ? m[1].replace(/\s/g, "") : ""; }
@@ -317,6 +320,9 @@ window.CCL_GOOGLE_CLIENT_ID = "";
       vals.forEach(function (v) { var key = v.toLowerCase(); if (!(key in cnt)) { cnt[key] = 0; order.push(v); } cnt[key]++; });
       var best = order.slice().sort(function (a, b) { return cnt[b.toLowerCase()] - cnt[a.toLowerCase()]; })[0] || "";
       if (k === "product" && order.some(function (v) { return v === "Fetal Bovine Serum"; })) best = "Fetal Bovine Serum";
+      // A bottle in use is rarely already expired: if some passes read a date in the future, prefer the most-read future date.
+      if (k === "expiry") { var td = new Date().toISOString().slice(0, 10), fut = order.filter(function (v) { return v >= td; }); if (fut.length && best < td) best = fut.sort(function (a, b) { return cnt[b.toLowerCase()] - cnt[a.toLowerCase()]; })[0]; }
+      if (k === "product" && kind !== "fbs") { var bm = order.filter(function (v) { return /DMEM|RPMI|F-?12|MEM\b|IMDM|McCoy|Leibovitz|Neurobasal|Medium 199/i.test(v); }); if (bm.length) best = bm.sort(function (a, b) { return cnt[b.toLowerCase()] - cnt[a.toLowerCase()] || b.length - a.length; })[0]; }
       out[k] = best;
       if (best && (always[k] || order.length > 1 || vals.length < 2)) out.unsure.push(k);
     });
@@ -3144,7 +3150,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
       var u = function (k) { return unsure.indexOf(k) >= 0; };
       var prod = String(r.product || "").trim(), lot = String(r.lot || "").trim(), exp = /^\d{4}-\d{2}-\d{2}$/.test(String(r.expiry || "")) ? r.expiry : "", cat = String(r.catalog || "").trim(), brand = String(r.brand || r.manufacturer || "").trim(), sup = String(r.supplier || "").trim();
       // Web page: the top Upload works out from the text whether the bottle is FBS or a base medium.
-      if (kind === "auto") kind = /fetal|bovine|\bFBS\b|\bFCS\b|serum/i.test(prod) ? "fbs" : /DMEM|RPMI|\bMEM\b|EMEM|F-?12|Ham|Opti-?MEM|McCoy|IMDM|Leibovitz|medium|media/i.test(prod) ? "base" : "other";
+      if (kind === "auto") kind = /DMEM|RPMI|\bMEM\b|EMEM|F-?12|Ham|Opti-?MEM|McCoy|IMDM|Leibovitz|Neurobasal|medium|media/i.test(prod) ? "base" : /fetal|bovine|\bFBS\b|\bFCS\b|serum/i.test(prod) ? "fbs" : "other";
       if (kind === "base") {
         put("m_base", prod, u("product")); put("m_basebrand", brand, u("brand")); put("m_basesupp", sup, u("supplier")); put("m_basecat", cat, u("catalog"));
         put("m_baselot", lot, u("lot")); put("m_baseexp", exp, u("expiry"));
@@ -3157,7 +3163,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
       var read = [prod && "Item: " + prod, brand && "Brand: " + brand, sup && "Supplier: " + sup, cat && "Cat #: " + cat, lot && "Lot: " + lot, exp && "Expiry: " + exp].filter(Boolean).join(" | ");
       if (WEB && !read) { out.textContent = "Couldn't read this photo. The photo is saved."; btn.classList.remove("busy"); this.value = ""; return; }
       read = read || "Nothing readable found.";
-      out.innerHTML = '<img alt="Scanned bottle" src="' + url + '"><div>' + (blobs.length > 1 ? blobs.length + " photos read. " : "") + esc(read) + "<br>" + (kind === "base" || kind === "fbs" ? "<b>Check against the bottle before saving.</b>" + (unsure.length ? " Amber fields were hard to read." : "") : WEB ? "Not filled in: I couldn't tell if this is FBS or a base medium. Use Upload next to Base medium or FBS instead." : "") + (WEB ? " The photo is saved with the batch." : "") + "</div>";
+      out.innerHTML = '<img alt="Scanned bottle" src="' + url + '"><div>' + (blobs.length > 1 ? blobs.length + " photos read. " : "") + esc(read) + "<br>" + (kind === "base" || kind === "fbs" ? "<b>Check against the bottle before saving.</b>" + (unsure.length ? " Amber fields were hard to read." : "") : WEB ? "Not filled in: I couldn't tell if this is FBS or a base medium. Use Upload next to Base medium or FBS instead." : "") + (WEB && exp && exp < today() ? " <b>The expiry it read (" + esc(exp) + ") is already past: check it on the bottle.</b>" : "") + (WEB ? " The photo is saved with the batch." : "") + "</div>";
     } catch (e) {
       out.textContent = e && e.code === "not_granted" ? (WEB ? "Couldn't read this photo. The photo is saved." : "Scanning was not allowed.") : WEB ? "Couldn't read this photo. The photo is saved." : "Could not read that photo" + (e && e.message ? ": " + e.message : ".");
     }
