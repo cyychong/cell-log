@@ -293,7 +293,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     return r;
   }
   // One photo is read several ways (label cut out and enlarged, whole photo, plain); a field is trusted only when the passes agree.
-  function variants(blob) {
+  function variants(blob, rot) {
     return new Promise(function (res) {
       var url = URL.createObjectURL(blob), im = new Image();
       im.onload = function () {
@@ -301,7 +301,9 @@ window.CCL_GOOGLE_CLIENT_ID = "";
         var W = im.naturalWidth, H = im.naturalHeight;
         function mk(x, y, w, h, longest, gray) {
           var k = Math.min(3, longest / Math.max(w, h)), c = document.createElement("canvas"); c.width = Math.max(1, Math.round(w * k)); c.height = Math.max(1, Math.round(h * k));
-          var g = c.getContext("2d"); g.drawImage(im, x, y, w, h, 0, 0, c.width, c.height);
+          var g = c.getContext("2d");
+          if (rot) { g.fillStyle = "#fff"; g.fillRect(0, 0, c.width, c.height); g.translate(c.width / 2, c.height / 2); g.rotate(rot * Math.PI / 180); g.translate(-c.width / 2, -c.height / 2); }
+          g.drawImage(im, x, y, w, h, 0, 0, c.width, c.height);
           if (gray) { var d = g.getImageData(0, 0, c.width, c.height), a = d.data; for (var i = 0; i < a.length; i += 4) { var v = 0.299 * a[i] + 0.587 * a[i + 1] + 0.114 * a[i + 2]; v = Math.max(0, Math.min(255, (v - 110) * 1.6 + 110)); a[i] = a[i + 1] = a[i + 2] = v; } g.putImageData(d, 0, 0); }
           return new Promise(function (r) { c.toBlob(r, "image/png"); });
         }
@@ -316,8 +318,9 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     var always = { lot: 1, catalog: 1, expiry: 1 }; // similar digits and letters (5/7, A/4, 0/O) get swapped, so these are always shown for checking
     var out = { supplier: "", unsure: [] }, keys = ["product", "brand", "catalog", "lot", "expiry"].concat(kind === "dissociation" ? ["concentration"] : []).concat(kind === "supplement" ? ["stock"] : []);
     keys.forEach(function (k) {
-      var vals = list.map(function (p) { return p[k]; }).filter(Boolean), cnt = {}, order = [];
-      vals.forEach(function (v) { var key = v.toLowerCase(); if (!(key in cnt)) { cnt[key] = 0; order.push(v); } cnt[key]++; });
+      var vals = list.filter(function (p) { return p[k]; }), cnt = {}, order = [];
+      vals.forEach(function (p) { var v = p[k], key = v.toLowerCase(); if (!(key in cnt)) { cnt[key] = 0; order.push(v); } cnt[key] += p._w || 1; });
+      vals = vals.map(function (p) { return p[k]; });
       var best = order.slice().sort(function (a, b) { return cnt[b.toLowerCase()] - cnt[a.toLowerCase()]; })[0] || "";
       if (k === "product" && order.some(function (v) { return v === "Fetal Bovine Serum"; })) best = "Fetal Bovine Serum";
       // A bottle in use is rarely already expired: if some passes read a date in the future, prefer the most-read future date.
@@ -349,9 +352,22 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     return getWorker().then(function (w) {
       return w.setParameters({ tessedit_pageseg_mode: "6" }).then(function () {
         var parsed = [], chain = Promise.resolve();
+        // Text that runs slightly uphill or downhill is misread at the line ends (MAY/2027 read as MAY/2025).
+        // The slope of the text lines is measured on the first readings; the photo is then turned level and read again, and the level readings count double.
+        var slopeOf = function (r) {
+          var a = (r.data.lines || []).filter(function (l) { var b = l.baseline; return b && b.x1 - b.x0 > 80 && String(l.text || "").trim().length >= 4; }).map(function (l) { var b = l.baseline; return Math.atan2(b.y1 - b.y0, b.x1 - b.x0) * 180 / Math.PI; }).filter(function (d) { return Math.abs(d) < 15; }).sort(function (x, y) { return x - y; });
+          return a.length ? a[Math.floor(a.length / 2)] : null;
+        };
         blobs.forEach(function (b) {
+          var slopes = [];
           chain = chain.then(function () { return variants(b); }).then(function (vs) {
-            return vs.reduce(function (c, v) { return c.then(function () { return w.recognize(v); }).then(function (r) { parsed.push(parseLabel({ text: r.data.text || "", words: r.data.words || [] }, kind, which)); }); }, Promise.resolve());
+            return vs.reduce(function (c, v) { return c.then(function () { return w.recognize(v); }).then(function (r) { var sl = slopeOf(r); if (sl != null) slopes.push(sl); parsed.push(parseLabel({ text: r.data.text || "", words: r.data.words || [] }, kind, which)); }); }, Promise.resolve());
+          }).then(function () {
+            slopes.sort(function (x, y) { return x - y; }); var sl = slopes.length ? slopes[Math.floor(slopes.length / 2)] : 0;
+            if (Math.abs(sl) < 0.4) return;
+            return variants(b, -sl).then(function (vs) {
+              return [vs[0], vs[2]].filter(Boolean).reduce(function (c, v) { return c.then(function () { return w.recognize(v); }).then(function (r) { var p = parseLabel({ text: r.data.text || "", words: r.data.words || [] }, kind, which); p._w = 2; parsed.push(p); }); }, Promise.resolve());
+            });
           });
         });
         return chain.then(function () { return vote(parsed, kind); });
