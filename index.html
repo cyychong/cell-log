@@ -238,7 +238,17 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     // A printed base-medium name wins over anything else (a handwritten "+10% FBS" note must not make the bottle FBS).
     var BASE_RX = /(KnockOut\s*DMEM|DMEM\s*[:\/]?\s*F\s*[\-\u2010-\u2015~_.]?\s*[1lI][2Z]|Advanced\s*DMEM|DMEM|RPMI(?:[\s-]*1640)?|Ham'?s\s*F-?12|Opti-?MEM|McCoy'?s\s*5A|IMDM|Leibovitz'?s?\s*L-?15|Neurobasal|Medium\s*199|\bEMEM\b|\bMEM\b(?:\s*alpha)?)/i;
     if (which !== "fbs") { var bl = lines.filter(function (l) { return BASE_RX.test(l); })[0]; if (bl) r.product = bl.match(BASE_RX)[1].replace(/[\u2010-\u2015~_]/g, "-").replace(/F\s*-?\s*[1lI][2Z]/i, "F-12").replace(/\s*([:\/])\s*/g, "$1").replace(/\s+/g, " ").trim(); }
-    if (/fetal\s+bovine\s+serum|foetal\s+bovine\s+serum/i.test(one) && (which === "fbs" || !r.product || /fbs|serum/i.test(r.product))) r.product = "Fetal Bovine Serum";
+    // FBS: the smaller line under "Fetal Bovine Serum" says which kind (e.g. Premium Plus Heat Inactivated FBS), so it is added in brackets.
+    if (/fetal\s+bovine\s+serum|foetal\s+bovine\s+serum/i.test(one) && (which === "fbs" || !r.product || /fbs|serum/i.test(r.product))) {
+      r.product = "Fetal Bovine Serum";
+      var fi = -1; lines.forEach(function (l, ix) { if (fi < 0 && /f[eo]+tal\s+bovine\s+serum/i.test(l)) fi = ix; });
+      var sub = fi >= 0 && lines[fi + 1] ? lines[fi + 1].replace(/^[^A-Za-z0-9]+|[^A-Za-z0-9)]+$/g, "").replace(/\s+[^\sA-Za-z0-9]{1,2}$/, "").trim() : "";
+      // keep only the stretch from the first to the last FBS word, which drops stray characters read from the bottle around the label
+      var VOC = /^(premium|plus|heat|inactivated|lnactivated|qualified|certified|characteri[sz]ed|dialy[sz]ed|charcoal|stripped|exosome|depleted|embryonic|stem|cell|es|one|shot|defined|us|usa|australia|australian|south|american|brazil|mexico|new|zealand|eu|european|standard|value|research|grade|low|endotoxin|igg|ultra|tetracycline|screened|tested|performance|advanced|select|superior|gold|reduced|irradiated|gamma|origin|fbs|serum|hi|mesenchymal|msc)$/i;
+      var tk = sub.split(/\s+/), a0 = -1, a1 = -1; tk.forEach(function (t, ix) { if (VOC.test(t.replace(/[^A-Za-z]/g, ""))) { if (a0 < 0) a0 = ix; a1 = ix; } });
+      sub = a0 >= 0 ? tk.slice(a0, a1 + 1).join(" ") : "";
+      if (sub && /[a-z]{3}/i.test(sub) && !/^(category|origin:|ref|lot|cat)/i.test(sub)) r.product += " (" + sub.replace(/\blnactivated\b/i, "Inactivated") + ")";
+    }
     // Look-alike letters where digits belong (Ase69701 for A5669701): only fixed when the result after the first character is all digits.
     var fixDigits = function (v) {
       v = String(v || ""); if ((v.match(/\d/g) || []).length < 3) return v;
@@ -338,7 +348,8 @@ window.CCL_GOOGLE_CLIENT_ID = "";
       vals.forEach(function (p) { var v = p[k], key = v.toLowerCase(); if (!(key in cnt)) { cnt[key] = 0; order.push(v); } cnt[key] += p._w || 1; });
       vals = vals.map(function (p) { return p[k]; });
       var best = order.slice().sort(function (a, b) { return cnt[b.toLowerCase()] - cnt[a.toLowerCase()]; })[0] || "";
-      if (k === "product" && order.some(function (v) { return v === "Fetal Bovine Serum"; })) best = "Fetal Bovine Serum";
+      var fbsNames = order.filter(function (v) { return /^Fetal Bovine Serum/.test(v); });
+      if (k === "product" && fbsNames.length) { var withSub = fbsNames.filter(function (v) { return v.indexOf("(") > 0; }); best = (withSub.length ? withSub : fbsNames).sort(function (a, b) { return cnt[b.toLowerCase()] - cnt[a.toLowerCase()] || b.length - a.length; })[0]; }
       if (k === "product" && kind !== "fbs") { var bm = order.filter(function (v) { return /DMEM|RPMI|F-?12|MEM\b|IMDM|McCoy|Leibovitz|Neurobasal|Medium 199/i.test(v); }); if (bm.length) {
           // a fuller name wins over a shorter one it contains (DMEM:F-12 over DMEM)
           var nk = function (v) { return v.toLowerCase().replace(/[^a-z0-9]/g, ""); };
