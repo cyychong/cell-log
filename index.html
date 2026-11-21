@@ -1637,10 +1637,11 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     el.addEventListener("change", function () { el.__want = selDesc.get.call(el); });
   }
   trackSelect("f_protocol");
+  // The entry's protocol list shows only this cell line's protocols (and ones for all cell lines), in timeline order.
   function renderProtocolOptions() {
-    var ps = state.protocols.slice().sort(function (a, b) { return (a.title || "").localeCompare(b.title || "") || (b.version || "").localeCompare(a.version || ""); });
     ["f_protocol"].forEach(function (id) {
       var el = $(id), want = el.__want != null ? el.__want : el.value, ex = el.__extra;
+      var ps = state.protocols.filter(function (p) { var ln = String(p.line || "").trim(); return !ln || !isLine(state.tab) || ln === state.tab || (state.editing && p.id === want); }).sort(protoSort);
       el.innerHTML = '<option value="">None</option>' + ps.map(function (p) { return '<option value="' + esc(p.id) + '">' + esc(protoLabel(p)) + "</option>"; }).join("") +
         (ex && !ps.some(function (p) { return p.id === ex[0]; }) ? '<option value="' + esc(ex[0]) + '">' + esc(ex[1]) + "</option>" : "");
       el.value = want;
@@ -3285,6 +3286,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     try { exportLabel(); } catch (e) {}
     var isMedia = state.tab === MEDIA, isProto = state.tab === PROTO, line = isLine(state.tab);
     $("linePanel").hidden = !line; $("mediaPanel").hidden = !isMedia; $("protoPanel").hidden = !isProto;
+    if (line) renderProtocolOptions();
     $("noLines").hidden = !(state.linesReady && !state.lines.length);
     if (line) { renderExpBar(); renderEntries(); }
     renderMedia(); if (isProto) renderProtocols();
