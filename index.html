@@ -660,7 +660,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     bar.style.cssText = "max-width:1200px;margin:24px auto 16px;padding:0 16px;font:13px/1.4 system-ui,sans-serif;color:#7a8b89;display:flex;flex-direction:column;gap:8px";
     bar.innerHTML =
       '<div style="font-weight:600;color:inherit;margin-top:6px">Back up your log</div>' +
-      '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><span>Your log is saved only in this browser on this device. A backup file is a copy of your log (or one cell line or experiment): keep it safe, move it to another phone or computer, or send it to someone to look at. To work on an experiment together, use Download (zip) at the top instead. Not sure? See the Guide tab.</span><button type="button" id="bkExport" style="' + BTN + '">Export backup</button><button type="button" id="bkImport" style="' + BTN + '">Restore a backup</button><input id="bkFile" type="file" accept="application/json,.json,text/plain,.txt" hidden><span id="bkMsg" role="status"></span></div>' +
+      '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><span>Your log is saved only in this browser on this device. A backup file is a copy of your log (or one cell line or experiment): keep it safe, move it to another phone or computer, or send it to someone to look at. To work on an experiment together, use the Download (zip) button instead. Not sure? See the Guide tab.</span><button type="button" id="bkExport" style="' + BTN + '">Export backup</button><button type="button" id="bkImport" style="' + BTN + '">Restore a backup</button><input id="bkFile" type="file" accept="application/json,.json,text/plain,.txt" hidden><span id="bkMsg" role="status"></span></div>' +
       '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><span id="bkLast"></span><label style="display:flex;gap:6px;align-items:center">Remind me to back up<select id="bkEvery" style="font:inherit;padding:3px 6px;border-radius:6px;border:1px solid #9ab0ad;background:transparent;color:inherit"><option value="1">every day</option><option value="3">every 3 days</option><option value="7">every week</option><option value="14">every 2 weeks</option><option value="30">every month</option><option value="0">never</option></select></label></div>' +
       '<div id="gdRow" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center" hidden><span id="gdState"></span><button type="button" id="gdConnect" style="' + BTN + '">Connect Google Drive</button><button type="button" id="gdNow" style="' + BTN + '" hidden>Back up to Google Drive</button><button type="button" id="gdRestore" style="' + BTN + '" hidden>Restore from Google Drive</button><label id="gdAutoL" style="display:flex;gap:6px;align-items:center" hidden><input type="checkbox" id="gdAuto"> Back up to Drive by itself when a backup is due</label><button type="button" id="gdOff" style="' + BTN + '" hidden>Disconnect</button><span id="gdMsg" role="status"></span></div>' +
       '<div style="font-weight:600;color:inherit;margin-top:6px">Received a file from someone?</div>' +
@@ -668,7 +668,9 @@ window.CCL_GOOGLE_CLIENT_ID = "";
       '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><span>A backup file (.json or .txt) to look at their log?</span><button type="button" id="bkView" style="' + BTN + '">Open a shared log (view only)</button><input id="bkViewFile" type="file" accept="application/json,.json,text/plain,.txt" hidden></div>' +
       '<div id="modeRow" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center" hidden><span>Printed bottle labels are read:</span><select id="ocrSel" style="font:inherit;padding:4px 8px;border-radius:6px;border:1px solid #9ab0ad;background:transparent;color:inherit"><option value="device">on this phone (free, printed text only, check every field)</option><option value="ai">with AI (more accurate, uses the reading service)</option></select></div>' +
       '<div id="codeRow" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center" hidden><span>Photo and protocol reading access code is saved on this device.</span><button type="button" id="codeRemove" style="' + BTN + '">Remove it</button></div>';
-    document.body.appendChild(bar);
+    // Shown at the top, under the title, so backing up and sharing are easy to find.
+    var hdr = document.querySelector("header");
+    if (hdr && hdr.parentNode) { bar.style.margin = "0 auto 12px"; bar.style.borderBottom = "1px solid rgba(127,127,127,.25)"; bar.style.paddingBottom = "12px"; hdr.parentNode.insertBefore(bar, hdr.nextSibling); } else document.body.appendChild(bar);
     var msg = function (t) { document.getElementById("bkMsg").textContent = t; };
     function codeRefresh() { document.getElementById("codeRow").hidden = !ls("ccl-code"); }
     if (readerUrl()) { document.getElementById("modeRow").hidden = false; document.getElementById("ocrSel").value = ocrMode(); document.getElementById("ocrSel").onchange = function () { ls("ccl-ocr", this.value); }; }
@@ -1117,13 +1119,12 @@ window.CCL_GOOGLE_CLIENT_ID = "";
   <header>
     <div>
       <h1>Cell culture log</h1>
-      <div class="sub">Counts are in cells/mL. Your averages and totals are checked against your two counts.</div>
     </div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
       <span id="status"></span>
       <button id="reviewBtn" hidden>Review incoming entries</button><input id="reviewFile" type="file" accept="application/zip,.zip,application/json,.json" hidden>
       <button id="exportBtn" class="primary" hidden title="Excel sheets and photos for this experiment, plus a file someone can open (Open a share file) to add entries. Not a backup.">Download log (zip)</button>
-      <span class="sub" id="exportHint" hidden>Excel sheets + photos, and a file to work on this experiment with someone. For a backup, use Export backup at the bottom.</span>
+      <span class="sub" id="exportHint" hidden>Excel sheets + photos, and a file to work on this experiment with someone. For a backup, use Export backup (under the title).</span>
     </div>
   </header>
 
@@ -1233,7 +1234,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
           <label>Duration (min)<input id="f_cenTime" inputmode="decimal"></label>
           <div class="sect" id="sectFlasks"><span id="flaskHead">Flasks seeded</span> <span class="sub" id="flaskTotal"></span></div>
           <div class="full" id="entryFlasks"></div>
-          <div class="sect" id="sectCounts">Counts and seeding</div>
+          <div class="sect" id="sectCounts">Counts and seeding <span class="sub">counts in cells/mL; the app works out the average, total cells and volumes to add, so check them</span></div>
           <div class="full" id="srcBox"></div>
           <label>Count 1 (cells/mL)<input id="f_c1" inputmode="decimal" placeholder="e.g. 1.2e6"></label>
           <label>Count 2 (cells/mL)<input id="f_c2" inputmode="decimal" placeholder="e.g. 1.4e6"></label>
@@ -1294,12 +1295,13 @@ window.CCL_GOOGLE_CLIENT_ID = "";
       <details class="gsec"><summary>The app</summary>
       <ul><li>Log is saved on this device only; the installed app and the browser keep separate logs.</li>
       <li>Close and reopen to get updates (needs internet).</li>
-      <li>Back up regularly: Export backup, at the bottom.</li></ul>
+      <li>Back up regularly: Export backup, under the title.</li></ul>
       </details>
       <details class="gsec"><summary>Logging an entry</summary>
       <ul><li>Pick cell line → experiment → action. Defaults and passage # fill in.</li>
       <li>Passage: tick flasks trypsinized; pool or count each.</li>
       <li>Counts + resuspension volume → total cells.</li>
+      <li>The app calculates averages, total cells and volumes to add. Check them before seeding.</li>
       <li>New flasks: type cells, pick From → volume to add.</li>
       <li>Change media: one box per flask; a volume or words.</li>
       <li>Upload a photo: saved, printed text fills fields. Check amber.</li>
@@ -1319,7 +1321,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
         <tr><td data-label="To…">Get Excel sheets</td><td data-label="Use">Download (zip), top</td><td data-label="They use">Open the .xlsx</td></tr>
       </tbody></table>
       </details>
-      <p class="sub">Always check numbers before seeding.</p>
+
     </div>
   </section>
   <section id="protoPanel" class="wrap" style="gap:16px" hidden>
