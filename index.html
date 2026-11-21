@@ -790,7 +790,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     document.getElementById("shFile").onchange = function () {
       var f = this.files && this.files[0]; this.value = ""; if (!f) return;
       (window.__packFrom ? window.__packFrom(f, "share") : Promise.resolve(null)).then(function (j) {
-        if (!j || !j.line) { shMsg("That file is not a share file from the cell culture log. Open the zip the cell line's owner sent you."); return; }
+        if (!j || !j.line) { shMsg("That zip has no cell line to share inside it. Ask the owner to open the cell line's tab, pick the experiment, press Download (zip) at the top, and send you that zip."); return; }
         var res = importShare(j); window.__shareUi();
         shMsg("Opened " + j.line + ". Add entries on its tab. To send them back, press Download (zip) at the top and send that zip." + (res.kept ? " " + res.kept + " of your unsent changes were kept." : "") + (res.declined ? " " + res.declined + (res.declined === 1 ? " entry was" : " entries were") + " not accepted by the owner. They stay in your own log but will not be sent again." : ""));
       }, function () { shMsg("Could not open that file."); });
@@ -3663,6 +3663,9 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     if (isWebPage()) {
       var up = window.__localDb && window.__localDb.updatesPack ? await window.__localDb.updatesPack() : null;
       if (up) { zip.file("entries_from_" + safeName(up.from || "me") + ".json", JSON.stringify(up)); shareNote = "entries_from_" + safeName(up.from || "me") + ".json   Your " + up.n + " new or changed item(s) for the person who shared this cell line. Send them this zip."; }
+      // The web page can share a cell line too: the zip carries it so someone else can open it with "Open a share file".
+      var wsp = sc.exp ? sharePack(sc.exp.line) : null;
+      if (wsp) { zip.file("share_data.json", JSON.stringify(wsp)); shareNote = (shareNote ? shareNote + "\n" : "") + "share_data.json   Lets someone else keep logging " + sc.exp.line + ": they open this zip on the cell culture log web page (Open a share file), add entries, and send you back their own zip."; }
     } else if (sc.exp) {
       var sp = sharePack(sc.exp.line);
       if (sp) { zip.file("share_data.json", JSON.stringify(sp)); shareNote = "share_data.json   Lets someone without Claude keep logging " + sc.exp.line + ": they open this zip on the cell culture log web page (Open a share file), add entries, and send you back their own zip."; }

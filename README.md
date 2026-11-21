@@ -123,6 +123,12 @@ If you opened a share file from the lab, this zip also carries your new entries 
 2. Send the `.json` file.
 3. They press **Open a shared log (view only)** and choose the file.
 
+### Share a cell line with someone
+
+1. Open the cell line's tab and pick the experiment.
+2. Press **Download (zip)** at the top of the page.
+3. Send the zip. They press **Open a share file** and choose it; the cell line opens on its own tab in their log.
+
 ### Get a cell line or experiment from the lab
 
 1. The lab sends you a zip file.
