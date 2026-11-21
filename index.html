@@ -5,6 +5,8 @@
 window.CCL_READER_URL = "";
 /* To turn on Google Drive backups, paste the OAuth client ID from Google Cloud between the quotes on the next line (it is public, not a secret). */
 window.CCL_GOOGLE_CLIENT_ID = "";
+window.CCL_UPDATED = "2026-11-21 18:07";
+window.CCL_NEW = "Backup and sharing moved to the top; Guide tab (quick reminders); this what's-new line.";
 </script>
 <script>
 (function () {
@@ -1119,6 +1121,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
   <header>
     <div>
       <h1>Cell culture log</h1>
+      <div class="sub" id="updLine" hidden></div>
     </div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
       <span id="status"></span>
@@ -1294,7 +1297,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
       <div class="actions" style="margin-top:4px"><button type="button" class="small" id="gOpenAll">Open all</button><button type="button" class="small" id="gCloseAll">Close all</button></div>
       <details class="gsec"><summary>The app</summary>
       <ul><li>Log is saved on this device only; the installed app and the browser keep separate logs.</li>
-      <li>Close and reopen to get updates (needs internet).</li>
+      <li>Close and reopen to get updates (needs internet). Updates bring new features, protocols or cell lines; your log stays as it is. What's new shows under the title.</li>
       <li>Back up regularly: Export backup, under the title.</li></ul>
       </details>
       <details class="gsec"><summary>Logging an entry</summary>
@@ -3334,6 +3337,8 @@ window.CCL_GOOGLE_CLIENT_ID = "";
   function addCams() { ["vialScanFile", "dissScanFile", "scanFile", "m_photoFile", "baseScanFile", "fbsScanFile", "f_photo", "pReadFile"].forEach(function (id) { addCam($(id)); }); [].forEach.call(document.querySelectorAll("#suppList [data-scan]"), addCam); }
   // The web page (outside Claude) says "Upload" where the Claude version says "Scan".
   var WEB = !!window.__localDb;
+  // Web page: when it was last updated and what is new (written in by the build).
+  if (WEB && window.CCL_UPDATED) { $("updLine").textContent = "Last updated " + window.CCL_UPDATED + (window.CCL_NEW ? " \u00b7 New: " + window.CCL_NEW : ""); $("updLine").hidden = false; }
   (function () {
     if (!WEB) return;
     var set = function (id, text, aria) { var el = $(id), host = el && el.closest(".filebtn"); if (!host) return; host.firstChild.nodeValue = text; el.setAttribute("aria-label", aria); };

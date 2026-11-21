@@ -22,6 +22,8 @@ The icon opens it like an app. It keeps working without internet.
 
 **Getting updates:** the app updates itself when it opens with internet. If an app window has been open for a while, reload it (**⌘R** on a Mac, or close and reopen the app on a phone).
 
+**What updates bring:** usually new features, new or updated protocols, or new cell lines. Your log is never changed by an update. The line under the title shows when the page was last updated and what's new.
+
 ## Protocols
 
 The **Protocols** tab shows the lab's protocols, grouped by cell line. Each cell line starts folded: tap its name to see its protocols, and tap again to fold it. Each protocol links to its original file. When the lab adds or changes a protocol, it shows up the next time you open the page with internet. You don't need to download anything again.
