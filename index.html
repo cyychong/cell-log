@@ -1348,7 +1348,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     if ((e.fromFlasks || []).length > 1) out.push({ text: "Trypsinized from " + e.fromFlasks.join(", ") + " (pooled)", ok: null });
     out.push({ text: "Average = (" + fmt(c1) + " + " + fmt(c2) + ") \u00f7 2 = " + fmt(t), ok: a == null ? null : close(a, t), mine: a });
     if (num(e.resusp) > 0) out.push({ text: "Total cells = " + fmt(t) + " cells/mL \u00d7 " + fmt(num(e.resusp)) + " mL = " + fmt(t * num(e.resusp)), ok: null });
-    (Array.isArray(e.perFlask) ? e.perFlask : []).forEach(function (f) { if (t > 0 && num(f.cells) != null) out.push({ text: (f.label || f.type) + ": " + fmt(num(f.cells)) + " cells \u00f7 " + fmt(t) + " cells/mL = " + vol(num(f.cells) / t) + (WELLS[f.type] ? " per well" : " per flask") + (f.n > 1 ? " (\u00d7" + f.n + ")" : ""), ok: null }); });
+    (Array.isArray(e.perFlask) ? e.perFlask : []).forEach(function (f) { if (t > 0 && num(f.cells) != null) out.push({ text: (f.label || f.type) + (f.src ? " from " + f.src : "") + ": " + fmt(num(f.cells)) + " cells \u00f7 " + fmt(t) + " cells/mL = " + vol(num(f.cells) / t) + (WELLS[f.type] ? " per well" : " per flask") + (f.n > 1 ? " (\u00d7" + f.n + ")" : ""), ok: null }); });
     var g = num(e.target);
     if (g != null && t > 0) out.push({ text: "Volume to add = " + fmt(g) + " cells \u00f7 " + fmt(t) + " cells/mL = " + vol(g / t), ok: v == null ? null : close(v, g / t), mine: v });
     if (v != null) out.push({ text: "Cells seeded = " + fmt(t) + " \u00d7 " + fmt(v) + " mL = " + fmt(t * v), ok: s == null ? null : close(s, t * v), mine: s });
@@ -2760,7 +2760,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     entryFl.get().forEach(function (f) { for (var i = 0; i < f.n; i++) out.push({ key: f.type + "#" + i, type: f.type, area: f.area, label: f.type + (f.n > 1 ? " #" + (i + 1) : "") }); });
     return out;
   }
-  function pfList() { return pfRows().filter(function (r) { return num(state.pf[r.key]) != null; }).map(function (r) { var o = { type: r.type, n: 1, cells: num(state.pf[r.key]), label: r.label }; if (typeof srcSeparate === "function" && srcSeparate()) o.src = srcOf(r.key); return o; }); }
+  function pfList() { return pfRows().filter(function (r) { return num(state.pf[r.key]) != null; }).map(function (r) { var o = { type: r.type, n: 1, cells: num(state.pf[r.key]), label: r.label }; if (typeof srcOptions === "function" && srcOptions().length) o.src = srcOf(r.key); return o; }); }
   function pfTotal() { var l = pfList(); return l.length ? l.reduce(function (s, f) { return s + f.cells * (WELLS[f.type] || 1); }, 0) : null; }
   // Trypsinized from: when the last passage left several flasks, choose which were trypsinized,
   // and whether they were pooled (one count) or counted separately (counts, volume and confluence for each).
@@ -2768,12 +2768,14 @@ window.CCL_GOOGLE_CLIENT_ID = "";
   function srcSel() { return state.src.rows.filter(function (rw) { return state.src.sel[rw.label]; }); }
   function srcSeparate() { return state.src.mode === "separate" && srcSel().length > 1; }
   function srcAvg(label) { var v = state.src.vals[label] || {}, a = num(v.c1), b = num(v.c2); return a != null && b != null ? (a + b) / 2 : null; }
-  function srcOf(key) { var sel = srcSel(), l = state.pfSrc && state.pfSrc[key]; return sel.some(function (x) { return x.label === l; }) ? l : sel[0] ? sel[0].label : ""; }
+  // Where each new flask's cells come from: the ticked flask, the pooled tube, or (counted separately) one of the ticked flasks.
+  function srcOptions() { var sel = srcSel(); if (!sel.length) return []; if (srcSeparate()) return sel.map(function (x) { return x.label; }); return [sel.length > 1 ? "Pooled (" + sel.map(function (x) { return x.label; }).join(" + ") + ")" : sel[0].label]; }
+  function srcOf(key) { var o = srcOptions(), l = state.pfSrc && state.pfSrc[key]; return o.indexOf(l) >= 0 ? l : o[0] || ""; }
   function setupSources() {
     if (state.editing) return;
     var act = $("f_action").value, src = act === "Passage" && isLine(state.tab) ? lastFlaskEntry() : null, rows = [];
     if (src) flasksOf(src).forEach(function (f) { for (var q = 0; q < (f.n || 1); q++) rows.push({ type: f.type, label: f.type + (f.n > 1 ? " #" + (q + 1) : "") }); });
-    if (rows.length < 2) rows = [];
+
     var keep = state.src, sel = {}; rows.forEach(function (rw, ix) { sel[rw.label] = keep.rows.length ? !!keep.sel[rw.label] : ix === 0; });
     if (rows.length && !rows.some(function (rw) { return sel[rw.label]; })) sel[rows[0].label] = true;
     state.src = { rows: rows, sel: sel, mode: keep.mode || "pooled", vals: keep.vals || {}, from: src };
@@ -2809,11 +2811,11 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     // Once numbers are typed per flask, the total follows them (adding or removing a flask changes it). Older entries with only a total keep it.
     if (state.pfUsed) { var g0 = pfTotal(); $("f_target").value = g0 == null ? "" : String(g0); }
     if (!rows.length) { box.innerHTML = ""; return; }
-    box.innerHTML = '<b>Cells to seed in each flask</b><div class="sub">' + (srcSeparate() ? "Pick which flask each new flask's cells come from. " : "") + 'Type the cells for each flask. For plates, type cells per well. The volume to add is worked out from the average count.</div>' +
+    box.innerHTML = '<b>Cells to seed in each flask</b><div class="sub">' + (srcOptions().length > 1 ? "Pick which flask each new flask's cells come from. " : "") + 'Type the cells for each flask. For plates, type cells per well. The volume to add is worked out from the average count.</div>' +
       '<div class="pft"><div class="pfrow head"><span>Flask (protocol range)</span><span>Cells to seed</span><span>Volume to add</span></div>' +
       rows.map(function (r) {
         return '<div class="pfrow"><span><b>' + esc(r.label) + '</b> <span class="sub">' + esc(r.area == null ? "? cm²" : fmt(r.area) + " cm²" + (WELLS[r.type] ? " per well" : "")) + '</span><span class="sub" data-pfr="' + esc(r.key) + '"></span></span>' +
-          '<span class="pfin">' + (srcSeparate() ? '<select data-pfsrc="' + esc(r.key) + '" aria-label="Cells for ' + esc(r.label) + ' come from">' + srcSel().map(function (x) { return '<option' + (x.label === srcOf(r.key) ? " selected" : "") + ">" + esc(x.label) + "</option>"; }).join("") + "</select>" : "") +
+          '<span class="pfin">' + (srcOptions().length ? '<select data-pfsrc="' + esc(r.key) + '" aria-label="Cells for ' + esc(r.label) + ' come from"' + (srcOptions().length < 2 ? " disabled" : "") + ">" + srcOptions().map(function (x) { return '<option value="' + esc(x) + '"' + (x === srcOf(r.key) ? " selected" : "") + ">From: " + esc(x) + "</option>"; }).join("") + "</select>" : "") +
           '<input data-pf="' + esc(r.key) + '" inputmode="decimal" placeholder="' + (WELLS[r.type] ? "e.g. 3e4 per well" : "e.g. 3e5") + '" aria-label="Cells to seed in ' + esc(r.label) + (WELLS[r.type] ? " per well" : "") + '" value="' + esc(state.pf[r.key] == null ? "" : state.pf[r.key]) + '"></span><span data-pfv="' + esc(r.key) + '"></span></div>';
       }).join("") + '<div class="pfrow tot"><span>Total</span><span data-pftot></span><span data-pfvtot></span></div></div>';
   }
