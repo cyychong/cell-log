@@ -236,8 +236,8 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     var pl = cand.filter(function (l) { return rx.test(l); })[0];
     if (pl) { var pm = pl.replace(/^[^A-Za-z0-9]+/, "").match(/^[A-Za-z0-9][A-Za-z0-9:\/\-.'%(), ]*/); r.product = pm ? pm[0].replace(/[\s.:,\-]+$/, "").replace(/^[A-Za-z0-9]\s+(?=\S{3,})/, "").replace(/\s+[A-Za-z]$/, "") : ""; }
     // A printed base-medium name wins over anything else (a handwritten "+10% FBS" note must not make the bottle FBS).
-    var BASE_RX = /(KnockOut\s*DMEM|DMEM\s*[:\/]?\s*F[\s-]?12|Advanced\s*DMEM|DMEM|RPMI(?:[\s-]*1640)?|Ham'?s\s*F-?12|Opti-?MEM|McCoy'?s\s*5A|IMDM|Leibovitz'?s?\s*L-?15|Neurobasal|Medium\s*199|\bEMEM\b|\bMEM\b(?:\s*alpha)?)/i;
-    if (which !== "fbs") { var bl = lines.filter(function (l) { return BASE_RX.test(l); })[0]; if (bl) r.product = bl.match(BASE_RX)[1].replace(/\s+/g, " ").trim(); }
+    var BASE_RX = /(KnockOut\s*DMEM|DMEM\s*[:\/]?\s*F\s*[\-\u2010-\u2015~_.]?\s*[1lI][2Z]|Advanced\s*DMEM|DMEM|RPMI(?:[\s-]*1640)?|Ham'?s\s*F-?12|Opti-?MEM|McCoy'?s\s*5A|IMDM|Leibovitz'?s?\s*L-?15|Neurobasal|Medium\s*199|\bEMEM\b|\bMEM\b(?:\s*alpha)?)/i;
+    if (which !== "fbs") { var bl = lines.filter(function (l) { return BASE_RX.test(l); })[0]; if (bl) r.product = bl.match(BASE_RX)[1].replace(/[\u2010-\u2015~_]/g, "-").replace(/F\s*-?\s*[1lI][2Z]/i, "F-12").replace(/\s*([:\/])\s*/g, "$1").replace(/\s+/g, " ").trim(); }
     if (/fetal\s+bovine\s+serum|foetal\s+bovine\s+serum/i.test(one) && (which === "fbs" || !r.product || /fbs|serum/i.test(r.product))) r.product = "Fetal Bovine Serum";
     if (kind === "dissociation") { var pc = one.match(/\b(\d+(?:\.\d+)?)\s?%/), xc = one.match(/\b(\d+(?:\.\d+)?)\s?X\b/); r.concentration = pc && xc ? pc[1] + "% (" + xc[1] + "X)" : pc ? pc[1] + "%" : xc ? xc[1] + "X" : ""; }
     if (kind === "supplement") { r.stock = (m = one.match(/\b(\d+(?:\.\d+)?\s?(?:X|mg\/mL|µg\/mL|ug\/mL|ng\/mL|mM|U\/mL|%)\b)/i)) ? m[1].replace(/\s/g, "") : ""; }
@@ -324,7 +324,11 @@ window.CCL_GOOGLE_CLIENT_ID = "";
       vals = vals.map(function (p) { return p[k]; });
       var best = order.slice().sort(function (a, b) { return cnt[b.toLowerCase()] - cnt[a.toLowerCase()]; })[0] || "";
       if (k === "product" && order.some(function (v) { return v === "Fetal Bovine Serum"; })) best = "Fetal Bovine Serum";
-      if (k === "product" && kind !== "fbs") { var bm = order.filter(function (v) { return /DMEM|RPMI|F-?12|MEM\b|IMDM|McCoy|Leibovitz|Neurobasal|Medium 199/i.test(v); }); if (bm.length) best = bm.sort(function (a, b) { return cnt[b.toLowerCase()] - cnt[a.toLowerCase()] || b.length - a.length; })[0]; }
+      if (k === "product" && kind !== "fbs") { var bm = order.filter(function (v) { return /DMEM|RPMI|F-?12|MEM\b|IMDM|McCoy|Leibovitz|Neurobasal|Medium 199/i.test(v); }); if (bm.length) {
+          // a fuller name wins over a shorter one it contains (DMEM:F-12 over DMEM)
+          var nk = function (v) { return v.toLowerCase().replace(/[^a-z0-9]/g, ""); };
+          bm = bm.filter(function (v) { return !bm.some(function (o) { return o !== v && nk(o).length > nk(v).length && nk(o).indexOf(nk(v)) === 0; }); });
+          best = bm.sort(function (a, b) { return cnt[b.toLowerCase()] - cnt[a.toLowerCase()] || b.length - a.length; })[0]; } }
       out[k] = best;
       if (best && (always[k] || order.length > 1 || vals.length < 2)) out.unsure.push(k);
     });
