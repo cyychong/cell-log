@@ -239,6 +239,21 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     var BASE_RX = /(KnockOut\s*DMEM|DMEM\s*[:\/]?\s*F\s*[\-\u2010-\u2015~_.]?\s*[1lI][2Z]|Advanced\s*DMEM|DMEM|RPMI(?:[\s-]*1640)?|Ham'?s\s*F-?12|Opti-?MEM|McCoy'?s\s*5A|IMDM|Leibovitz'?s?\s*L-?15|Neurobasal|Medium\s*199|\bEMEM\b|\bMEM\b(?:\s*alpha)?)/i;
     if (which !== "fbs") { var bl = lines.filter(function (l) { return BASE_RX.test(l); })[0]; if (bl) r.product = bl.match(BASE_RX)[1].replace(/[\u2010-\u2015~_]/g, "-").replace(/F\s*-?\s*[1lI][2Z]/i, "F-12").replace(/\s*([:\/])\s*/g, "$1").replace(/\s+/g, " ").trim(); }
     if (/fetal\s+bovine\s+serum|foetal\s+bovine\s+serum/i.test(one) && (which === "fbs" || !r.product || /fbs|serum/i.test(r.product))) r.product = "Fetal Bovine Serum";
+    // Look-alike letters where digits belong (Ase69701 for A5669701): only fixed when the result after the first character is all digits.
+    var fixDigits = function (v) {
+      v = String(v || ""); if ((v.match(/\d/g) || []).length < 3) return v;
+      var map = { s: "5", S: "5", e: "6", b: "6", G: "6", o: "0", O: "0", D: "0", l: "1", i: "1", I: "1", z: "2", Z: "2", B: "8", g: "9", q: "9", t: "7" };
+      var tries = [1, 0, 2]; // a one-letter prefix (Gibco A5669701) first, then none, then two letters
+      for (var ti = 0; ti < tries.length; ti++) {
+        var pre = v.slice(0, tries[ti]), rest = v.slice(tries[ti]);
+        if (!/^[A-Za-z]*$/.test(pre) || !rest) continue;
+        var fixed = rest.replace(/[A-Za-z]/g, function (ch) { return map[ch] || ch; });
+        if (/^\d+(?:[-.]\d+)*$/.test(fixed)) return pre.toUpperCase() + fixed;
+      }
+      return v;
+    };
+    if (r.catalog) r.catalog = fixDigits(r.catalog);
+    if (r.lot) r.lot = fixDigits(r.lot);
     if (kind === "dissociation") { var pc = one.match(/\b(\d+(?:\.\d+)?)\s?%/), xc = one.match(/\b(\d+(?:\.\d+)?)\s?X\b/); r.concentration = pc && xc ? pc[1] + "% (" + xc[1] + "X)" : pc ? pc[1] + "%" : xc ? xc[1] + "X" : ""; }
     if (kind === "supplement") { r.stock = (m = one.match(/\b(\d+(?:\.\d+)?\s?(?:X|mg\/mL|µg\/mL|ug\/mL|ng\/mL|mM|U\/mL|%)\b)/i)) ? m[1].replace(/\s/g, "") : ""; }
     // engine confidence: a field is unsure when a word it came from was read with low confidence
