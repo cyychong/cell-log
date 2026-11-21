@@ -75,6 +75,7 @@ Saves a copy of your whole log as one file, for example `cell-culture-backup-202
 - It includes all your entries, cell lines, defaults, experiments, media and attached photos, and all your protocols with their versions, notes, growth areas and tested seedings.
 - Your log in the browser isn't changed.
 - The file is a snapshot of that moment. Export again to include newer entries.
+- **What to include:** the whole log, one cell line (all its experiments), or one experiment. A cell line or experiment backup is handy for letting someone look at just that with **Open a shared log**. Don't use it to restore your own log: restoring replaces everything with only what's in the file.
 - It asks where the backup should go:
   - **Save to this device:** the file goes to your Downloads (or Files on a phone).
   - **Share…:** opens your device's share menu, so you can attach it to an email, put it in Google Drive, AirDrop it or send it in Messages. On an iPhone, pick **Save to Files**, then **Google Drive**, to put it in Drive. Some laptop browsers can't share files; then only **Save to this device** shows, and you attach the saved file to an email or drag it into Google Drive yourself.
