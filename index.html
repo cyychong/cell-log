@@ -521,13 +521,16 @@ window.CCL_GOOGLE_CLIENT_ID = "";
   // left out (the backup reminder bar), phones share and computers download.
   // Some phones (Android Chrome) will not share .json files but do share .txt, so the backup is offered as .txt there.
   function shareable(name, data, type) { try { var f = new File([data], name, { type: type }); return navigator.share && navigator.canShare && navigator.canShare({ files: [f] }) ? f : null; } catch (e) { return null; } }
+  // Chrome on Android says it can share .json files but then refuses them (NotAllowedError), so Android always gets .txt.
+  var ANDROID = /Android/i.test(navigator.userAgent || "");
+  function shareFile(name, blob) { var t = name.replace(/\.json$/, ".txt"); return ANDROID ? shareable(t, blob, "text/plain") : shareable(name, blob, "application/json") || shareable(t, blob, "text/plain"); }
   function canShareFiles() { return !!(shareable("t.json", "{}", "application/json") || shareable("t.txt", "{}", "text/plain")); }
   function saveBackupFile(msg, how) {
     var name = stampName(), blob = backupBlob(), file = null;
     try { file = new File([blob], name, { type: "application/json" }); } catch (e) {}
     var dl = function () { downloads.save({ filename: name, data: blob }); markBackup(); msg("Backup file saved to this device (" + name + ")."); };
     if (how === "save") { dl(); return Promise.resolve(); }
-    var sfile = (how === "share" || isPhone()) ? (shareable(name, blob, "application/json") || shareable(name.replace(/\.json$/, ".txt"), blob, "text/plain")) : null;
+    var sfile = (how === "share" || isPhone()) ? shareFile(name, blob) : null;
     if (how === "share" && !sfile) { msg("This browser can't share the backup file. Use Save to this device instead."); return Promise.resolve(); }
     if (sfile) {
       return navigator.share({ files: [sfile], title: "Cell culture log backup" }).then(function () {
@@ -657,9 +660,9 @@ window.CCL_GOOGLE_CLIENT_ID = "";
       // Phones only open the share menu straight from a tap, so the backup file is built now, before Share is tapped.
       var pre = null;
       var nm = stampName(), bl = backupBlob(), lite = null;
-      if (share) pre = { name: nm, blob: bl, file: shareable(nm, bl, "application/json") || shareable(nm.replace(/\.json$/, ".txt"), bl, "text/plain") };
+      if (share) pre = { name: nm, blob: bl, file: shareFile(nm, bl) };
       // a large backup (photos inside) can be refused by the phone's share menu, so a smaller one without photos is offered too
-      if (share && bl.size > 4e6) { var lb = backupBlobLite(), ln = nm.replace(/\.json$/, "_no-photos.json"); lite = { blob: lb, file: shareable(ln, lb, "application/json") || shareable(ln.replace(/\.json$/, ".txt"), lb, "text/plain") }; }
+      if (share && bl.size > 4e6) { var lb = backupBlobLite(), ln = nm.replace(/\.json$/, "_no-photos.json"); lite = { blob: lb, file: shareFile(ln, lb) }; }
       box.innerHTML = '<b>Where should the backup go?</b> <span class="sub">Backup size: ' + mb(bl.size) + '</span> <button type="button" class="small primary" data-bk="save">Save to this device</button>' +
         (share ? ' <button type="button" class="small primary" data-bk="share">Share\u2026 (email, Google Drive, AirDrop, Messages)</button>' : "") +
         (lite && lite.file ? ' <button type="button" class="small" data-bk="sharelite">Share without photos (' + mb(lite.blob.size) + ')</button><span class="sub" style="flex-basis:100%">Large backups can be refused by the share menu. The smaller one has every entry and setting, but not the photos; they stay on this phone.</span>' : "") +
