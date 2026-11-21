@@ -22,7 +22,7 @@ The icon opens it like an app. It keeps working without internet.
 
 **Getting updates:** the app updates itself when it opens with internet. If an app window has been open for a while, reload it (**⌘R** on a Mac, or close and reopen the app on a phone).
 
-**What updates bring:** usually new features, new or updated protocols, or new cell lines. Your log is never changed by an update. The line under the title shows when the page was last updated and what's new.
+**What updates bring:** usually new features, new or updated protocols, or new cell lines. Your log is never changed by an update. The line under the title shows when the page was last updated and what's new; after an update it's highlighted until you tap **Got it**.
 
 ## Protocols
 
@@ -70,9 +70,9 @@ Your log is saved **only in this browser, on this device**. It is not saved onli
 - **Clearing the browser's data**, for example "Clear browsing data" in Chrome or "Clear History and Website Data" in Safari, when "cookies and site data" is included.
 - **Deleting the home-screen icon** on iPhone.
 
-## Backup, sharing and the buttons under the title
+## Backup, sharing and the buttons at the bottom of the page
 
-They're at the top of the page, just under the title.
+Scroll to the very bottom of the page. You'll find the buttons there.
 
 ### Export backup
 
@@ -90,7 +90,7 @@ Saves a copy of your whole log as one file, for example `cell-culture-backup-202
 
 ### Backup reminder
 
-When a backup is due, a bar at the top of the page says when you last backed up, with buttons to back up now. Choose how often next to **Remind me to back up** (under the title): every day, every 3 days, every week (the usual setting), every 2 weeks, every month, or never. **Later** hides the bar until you next open the page.
+When a backup is due, a bar at the top of the page says when you last backed up, with buttons to back up now. Choose how often next to **Remind me to back up** at the bottom of the page: every day, every 3 days, every week (the usual setting), every 2 weeks, every month, or never. **Later** hides the bar until you next open the page.
 
 ### Restore a backup
 
@@ -126,7 +126,7 @@ If you opened a share file from the lab, this zip also carries your new entries 
 
 ### Let someone look at your whole log
 
-1. Press **Export backup** (under the title).
+1. Press **Export backup** at the bottom of the page.
 2. Send the `.json` file.
 3. They press **Open a shared log (view only)** and choose the file.
 
@@ -139,13 +139,13 @@ If you opened a share file from the lab, this zip also carries your new entries 
 ### Get a cell line or experiment from the lab
 
 1. The lab sends you a zip file.
-2. Press **Open a share file** (under the title) and choose the zip.
+2. Press **Open a share file** at the bottom of the page and choose the zip.
 
 ## Which file do I need?
 
 | I want to… | Use | The other person (or device) uses |
 |---|---|---|
-| Keep a safe copy of my log | **Export backup** (under the title), whole log | Keep the file somewhere safe (Google Drive, email) |
+| Keep a safe copy of my log | **Export backup** (bottom of the page), whole log | Keep the file somewhere safe (Google Drive, email) |
 | Move my log to a new phone or computer | **Export backup**, whole log | **Restore a backup** on the new device (replaces its log) |
 | Let someone look at my log, a cell line or one experiment | **Export backup**, pick what to include | **Open a shared log (view only)** |
 | Work on a cell line together | **Download (zip)** at the top, on that experiment's tab | **Open a share file**, add entries, send their own zip back |

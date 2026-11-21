@@ -5,8 +5,8 @@
 window.CCL_READER_URL = "";
 /* To turn on Google Drive backups, paste the OAuth client ID from Google Cloud between the quotes on the next line (it is public, not a secret). */
 window.CCL_GOOGLE_CLIENT_ID = "";
-window.CCL_UPDATED = "2026-11-21 18:07";
-window.CCL_NEW = "Backup and sharing moved to the top; Guide tab (quick reminders); this what's-new line.";
+window.CCL_UPDATED = "2026-11-21 18:15";
+window.CCL_NEW = "Update banner: highlighted after each update; backup and sharing back at the bottom.";
 </script>
 <script>
 (function () {
@@ -662,7 +662,7 @@ window.CCL_NEW = "Backup and sharing moved to the top; Guide tab (quick reminder
     bar.style.cssText = "max-width:1200px;margin:24px auto 16px;padding:0 16px;font:13px/1.4 system-ui,sans-serif;color:#7a8b89;display:flex;flex-direction:column;gap:8px";
     bar.innerHTML =
       '<div style="font-weight:600;color:inherit;margin-top:6px">Back up your log</div>' +
-      '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><span>Your log is saved only in this browser on this device. A backup file is a copy of your log (or one cell line or experiment): keep it safe, move it to another phone or computer, or send it to someone to look at. To work on an experiment together, use the Download (zip) button instead. Not sure? See the Guide tab.</span><button type="button" id="bkExport" style="' + BTN + '">Export backup</button><button type="button" id="bkImport" style="' + BTN + '">Restore a backup</button><input id="bkFile" type="file" accept="application/json,.json,text/plain,.txt" hidden><span id="bkMsg" role="status"></span></div>' +
+      '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><span>Your log is saved only in this browser on this device. A backup file is a copy of your log (or one cell line or experiment): keep it safe, move it to another phone or computer, or send it to someone to look at. To work on an experiment together, use Download (zip) at the top instead. Not sure? See the Guide tab.</span><button type="button" id="bkExport" style="' + BTN + '">Export backup</button><button type="button" id="bkImport" style="' + BTN + '">Restore a backup</button><input id="bkFile" type="file" accept="application/json,.json,text/plain,.txt" hidden><span id="bkMsg" role="status"></span></div>' +
       '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><span id="bkLast"></span><label style="display:flex;gap:6px;align-items:center">Remind me to back up<select id="bkEvery" style="font:inherit;padding:3px 6px;border-radius:6px;border:1px solid #9ab0ad;background:transparent;color:inherit"><option value="1">every day</option><option value="3">every 3 days</option><option value="7">every week</option><option value="14">every 2 weeks</option><option value="30">every month</option><option value="0">never</option></select></label></div>' +
       '<div id="gdRow" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center" hidden><span id="gdState"></span><button type="button" id="gdConnect" style="' + BTN + '">Connect Google Drive</button><button type="button" id="gdNow" style="' + BTN + '" hidden>Back up to Google Drive</button><button type="button" id="gdRestore" style="' + BTN + '" hidden>Restore from Google Drive</button><label id="gdAutoL" style="display:flex;gap:6px;align-items:center" hidden><input type="checkbox" id="gdAuto"> Back up to Drive by itself when a backup is due</label><button type="button" id="gdOff" style="' + BTN + '" hidden>Disconnect</button><span id="gdMsg" role="status"></span></div>' +
       '<div style="font-weight:600;color:inherit;margin-top:6px">Received a file from someone?</div>' +
@@ -670,9 +670,7 @@ window.CCL_NEW = "Backup and sharing moved to the top; Guide tab (quick reminder
       '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><span>A backup file (.json or .txt) to look at their log?</span><button type="button" id="bkView" style="' + BTN + '">Open a shared log (view only)</button><input id="bkViewFile" type="file" accept="application/json,.json,text/plain,.txt" hidden></div>' +
       '<div id="modeRow" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center" hidden><span>Printed bottle labels are read:</span><select id="ocrSel" style="font:inherit;padding:4px 8px;border-radius:6px;border:1px solid #9ab0ad;background:transparent;color:inherit"><option value="device">on this phone (free, printed text only, check every field)</option><option value="ai">with AI (more accurate, uses the reading service)</option></select></div>' +
       '<div id="codeRow" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center" hidden><span>Photo and protocol reading access code is saved on this device.</span><button type="button" id="codeRemove" style="' + BTN + '">Remove it</button></div>';
-    // Shown at the top, under the title, so backing up and sharing are easy to find.
-    var hdr = document.querySelector("header");
-    if (hdr && hdr.parentNode) { bar.style.margin = "0 auto 12px"; bar.style.borderBottom = "1px solid rgba(127,127,127,.25)"; bar.style.paddingBottom = "12px"; hdr.parentNode.insertBefore(bar, hdr.nextSibling); } else document.body.appendChild(bar);
+    document.body.appendChild(bar);
     var msg = function (t) { document.getElementById("bkMsg").textContent = t; };
     function codeRefresh() { document.getElementById("codeRow").hidden = !ls("ccl-code"); }
     if (readerUrl()) { document.getElementById("modeRow").hidden = false; document.getElementById("ocrSel").value = ocrMode(); document.getElementById("ocrSel").onchange = function () { ls("ccl-ocr", this.value); }; }
@@ -1006,6 +1004,9 @@ window.CCL_NEW = "Backup and sharing moved to the top; Guide tab (quick reminder
   .guide details.gsec[open] { padding-bottom: 10px; }
   .guide h3 { margin: 18px 0 6px; font-size: 15px; } .guide ul { margin: 0; padding-left: 20px; } .guide li { margin: 4px 0; } .guide a { color: var(--accent); }
   table.guidet { width: 100%; font-size: 13px; } table.guidet th, table.guidet td { white-space: normal; padding: 6px 8px; vertical-align: top; }
+  .updnew { margin-top: 6px; padding: 8px 12px; border-radius: 8px; background: #f2b200; color: #1d1a10; font-weight: 600; display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; box-shadow: 0 0 0 3px rgba(242,178,0,.35); }
+  .updnew .updbadge { background: #1d1a10; color: #f2b200; border-radius: 999px; padding: 2px 10px; font-size: 12px; }
+  .updnew button { background: #1d1a10; color: #fff; border-color: #1d1a10; }
   .mphotos { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
   .mphoto { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; font-size: 11px; }
   .mphoto .edesc { width: 110px; font-size: 11px; padding: 2px 4px; }
@@ -1127,7 +1128,7 @@ window.CCL_NEW = "Backup and sharing moved to the top; Guide tab (quick reminder
       <span id="status"></span>
       <button id="reviewBtn" hidden>Review incoming entries</button><input id="reviewFile" type="file" accept="application/zip,.zip,application/json,.json" hidden>
       <button id="exportBtn" class="primary" hidden title="Excel sheets and photos for this experiment, plus a file someone can open (Open a share file) to add entries. Not a backup.">Download log (zip)</button>
-      <span class="sub" id="exportHint" hidden>Excel sheets + photos, and a file to work on this experiment with someone. For a backup, use Export backup (under the title).</span>
+      <span class="sub" id="exportHint" hidden>Excel sheets + photos, and a file to work on this experiment with someone. For a backup, use Export backup at the bottom.</span>
     </div>
   </header>
 
@@ -1297,8 +1298,8 @@ window.CCL_NEW = "Backup and sharing moved to the top; Guide tab (quick reminder
       <div class="actions" style="margin-top:4px"><button type="button" class="small" id="gOpenAll">Open all</button><button type="button" class="small" id="gCloseAll">Close all</button></div>
       <details class="gsec"><summary>The app</summary>
       <ul><li>Log is saved on this device only; the installed app and the browser keep separate logs.</li>
-      <li>Close and reopen to get updates (needs internet). Updates bring new features, protocols or cell lines; your log stays as it is. What's new shows under the title.</li>
-      <li>Back up regularly: Export backup, under the title.</li></ul>
+      <li>Close and reopen to get updates (needs internet). Updates bring new features, protocols or cell lines; your log stays as it is. What's new shows under the title, highlighted after an update.</li>
+      <li>Back up regularly: Export backup, at the bottom.</li></ul>
       </details>
       <details class="gsec"><summary>Logging an entry</summary>
       <ul><li>Pick cell line → experiment → action. Defaults and passage # fill in.</li>
@@ -3338,7 +3339,18 @@ window.CCL_NEW = "Backup and sharing moved to the top; Guide tab (quick reminder
   // The web page (outside Claude) says "Upload" where the Claude version says "Scan".
   var WEB = !!window.__localDb;
   // Web page: when it was last updated and what is new (written in by the build).
-  if (WEB && window.CCL_UPDATED) { $("updLine").textContent = "Last updated " + window.CCL_UPDATED + (window.CCL_NEW ? " \u00b7 New: " + window.CCL_NEW : ""); $("updLine").hidden = false; }
+  // If the page changed since this device last saw it, the line becomes a bright banner until "Got it" is tapped.
+  if (WEB && window.CCL_UPDATED) {
+    var seen = null; try { seen = localStorage.getItem("ccl-seenUpdate"); } catch (e) {}
+    var txt = "Last updated " + window.CCL_UPDATED + (window.CCL_NEW ? " \u00b7 New: " + window.CCL_NEW : "");
+    var fresh = seen !== window.CCL_UPDATED;
+    if (seen == null) { try { localStorage.setItem("ccl-seenUpdate", window.CCL_UPDATED); } catch (e) {} fresh = false; } // first time on this device: nothing to announce
+    if (fresh) {
+      $("updLine").className = "updnew"; $("updLine").innerHTML = '<span class="updbadge">\u2728 Updated</span> <span>' + esc(txt) + '</span> <button type="button" class="small" id="updOk">Got it</button>';
+      $("updOk").onclick = function () { try { localStorage.setItem("ccl-seenUpdate", window.CCL_UPDATED); } catch (e) {} $("updLine").className = "sub"; $("updLine").textContent = txt; };
+    } else $("updLine").textContent = txt;
+    $("updLine").hidden = false;
+  }
   (function () {
     if (!WEB) return;
     var set = function (id, text, aria) { var el = $(id), host = el && el.closest(".filebtn"); if (!host) return; host.firstChild.nodeValue = text; el.setAttribute("aria-label", aria); };
