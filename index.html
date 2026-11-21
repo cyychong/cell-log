@@ -892,6 +892,11 @@ window.CCL_GOOGLE_CLIENT_ID = "";
   .calc.pre { border-left: 3px solid #e0a100; }
   .calc.pre .rem { font-weight: 600; color: #b26a00; margin-bottom: 4px; }
   @media (prefers-color-scheme: dark) { .calc.pre .rem { color: #ffb74d; } }
+  .corrwrap { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; margin-top: 8px; }
+  .corrsvg { flex: 1 1 340px; max-width: 600px; width: 100%; height: auto; }
+  .corrsvg .cg { stroke: var(--line); stroke-width: 1; } .corrsvg .ct { font-size: 11px; fill: var(--muted, #888); } .corrsvg .cl { font-size: 12px; fill: var(--muted, #888); }
+  .corrsvg .cp { fill: var(--accent); fill-opacity: .85; stroke: var(--bg, #fff); stroke-width: 1.5; } .corrsvg .cf { stroke: var(--accent); stroke-width: 2; stroke-dasharray: 6 4; opacity: .7; }
+  table.corrt { width: auto; flex: 0 1 320px; font-size: 13px; } table.corrt td, table.corrt th { padding: 4px 10px; }
   .mphotos { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
   .mphoto { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; font-size: 11px; }
   .mphoto .edesc { width: 110px; font-size: 11px; padding: 2px 4px; }
@@ -991,7 +996,9 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     td.calc, td.notes, td.photos, td:last-child { grid-column: 1 / -1; }
     td.ok, td.bad { padding: 4px 6px; border-radius: 4px; }
     td:last-child::before { content: none; }
-    /* Step tables stay real tables on phones. */
+    /* Step tables and the cells-vs-confluence table stay real tables on phones. */
+    table.corrt { display: table; } .corrt thead { display: table-header-group; } .corrt tbody { display: table-row-group; } .corrt tr { display: table-row; border: 0; padding: 0; margin: 0; }
+    .corrt td, .corrt th { display: table-cell; padding: 4px 8px; border-bottom: 1px solid var(--line); font-size: 12px; white-space: nowrap; } .corrt td::before { content: none; }
     table.stept { display: table; } .stept tbody { display: table-row-group; } .stept tr { display: table-row; border: 0; padding: 0; margin: 0; }
     .stept td, .stept th { display: table-cell; padding: 4px 6px 4px 0; border-bottom: 1px solid var(--line); font-size: 12px; white-space: normal; overflow-wrap: break-word; }
     .stept td::before { content: none; } .stept td:empty { display: table-cell; }
@@ -1077,7 +1084,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
       <form id="entryForm" autocomplete="off">
         <div class="grid">
           <label>Date<input id="f_date" type="date" required></label>
-          <label><span id="passLabel">Passage #</span><input id="f_passage" inputmode="numeric" placeholder="e.g. 12"></label>
+          <label><span id="passLabel">Passage #</span><input id="f_passage" inputmode="numeric" placeholder="e.g. 12"><span class="hint" id="h_pass"></span></label>
           <label>Action
             <select id="f_action"><option value="">Choose</option><option>Passage</option><option>Feed</option><option>Thaw</option><option>Change media</option><option>Freeze</option><option>Harvest</option></select>
             <span class="hint" id="thawHint"></span>
@@ -1122,6 +1129,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
           <div class="sect" id="sectCounts">Counts and seeding</div>
           <label>Count 1 (cells/mL)<input id="f_c1" inputmode="decimal" placeholder="e.g. 1.2e6"></label>
           <label>Count 2 (cells/mL)<input id="f_c2" inputmode="decimal" placeholder="e.g. 1.4e6"></label>
+          <label>Resuspended in (mL)<input id="f_resusp" inputmode="decimal" placeholder="e.g. 5"></label>
           <label>Cells to seed (total)<input id="f_target" inputmode="decimal" placeholder="e.g. 1e6"></label>
           <div class="full" id="perFlask"></div>
           <div class="calc pre full" id="preBox" aria-live="polite"></div>
@@ -1135,7 +1143,8 @@ window.CCL_GOOGLE_CLIENT_ID = "";
           <div class="sect">Other</div>
           <label>Media batch ID<input id="f_media" list="batches" placeholder="e.g. M-1104"><span class="hint bad" id="h_media"></span></label>
           <label>Protocol followed<select id="f_protocol"></select></label>
-          <label class="mediaonly" hidden>Media volume added (mL)<input id="f_mediaVol" inputmode="decimal" placeholder="e.g. 15"></label>
+          <label class="mediaonly" hidden id="medAllLbl">Media added<input id="f_mediaVol" placeholder="e.g. 15 mL"></label>
+          <div class="full mediaonly" hidden id="medFlasks"></div>
           <label>Confluence (%)<input id="f_conf" inputmode="decimal" placeholder="e.g. 80"></label>
           <label>Mycoplasma check
             <select id="f_myco"><option value="">Choose</option><option>Negative</option><option>Positive</option><option>Not done</option></select>
@@ -1160,12 +1169,13 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     <div class="panel">
       <div class="panel-head"><h2 id="logTitle">Log</h2><span class="sub" id="logCount"></span></div>
       <div class="viewbar" id="viewBar">
-        <div class="seg" role="group" aria-label="Log view"><button type="button" data-view="month">Month</button><button type="button" data-view="week">Week</button><button type="button" data-view="day">Day</button><button type="button" data-view="log">Log</button></div>
+        <div class="seg" role="group" aria-label="Log view"><button type="button" data-view="month">Month</button><button type="button" data-view="week">Week</button><button type="button" data-view="day">Day</button><button type="button" data-view="log">Log</button><button type="button" data-view="corr">Cells vs confluence</button></div>
         <div class="calnav" id="calNav"><button type="button" data-nav="prev" aria-label="Previous">‹</button><button type="button" data-nav="today">Today</button><button type="button" data-nav="next" aria-label="Next">›</button><b id="calTitle" role="status"></b>
           <label class="inl">Week starts on <select id="weekStart"><option value="1">Monday</option><option value="2">Tuesday</option><option value="3">Wednesday</option><option value="4">Thursday</option><option value="5">Friday</option><option value="6">Saturday</option><option value="0">Sunday</option></select></label></div>
       </div>
       <div id="calBox"></div>
       <div class="tablewrap" id="logTable"></div>
+      <div id="corrBox" hidden></div>
     </div>
   </section>
 
@@ -1285,7 +1295,9 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     return String(Number(n.toPrecision(4)));
   }
   // A volume in mL with the same volume in µL, e.g. "0.523 mL (523 µL)".
-  function vol(v) { return v == null || !isFinite(v) ? "" : fmt(v) + " mL (" + Number((v * 1000).toPrecision(4)).toLocaleString("en-US") + " \u00b5L)"; }
+  // Total cells in the tube = average count (cells/mL) x volume the cells were resuspended in (mL).
+  function totalOf(e) { var c1 = num(e && e.c1), c2 = num(e && e.c2), v = num(e && e.resusp); return c1 != null && c2 != null && v != null && v > 0 ? (c1 + c2) / 2 * v : null; }
+  function vol(v) { return v == null || !isFinite(v) ? "" : fmt(v) + " mL (" + Math.round(v * 1000).toLocaleString("en-US") + " \u00b5L)"; }
   function close(a, b) { return b === 0 ? a === 0 : Math.abs(a - b) <= 0.01 * Math.abs(b); }
   function expTxt(v) { return v === "No expiry" ? "no expiry" : "exp " + v; }
   // A "No expiry" checkbox under each expiry date. The date input reads and writes "No expiry" through .value, so the rest of the code needs no changes.
@@ -1324,6 +1336,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     var c1 = num(e.c1), c2 = num(e.c2); if (c1 == null || c2 == null) return [];
     var t = (c1 + c2) / 2, a = num(e.avg), v = num(e.vol), s = num(e.seeded), out = [];
     out.push({ text: "Average = (" + fmt(c1) + " + " + fmt(c2) + ") \u00f7 2 = " + fmt(t), ok: a == null ? null : close(a, t), mine: a });
+    if (num(e.resusp) > 0) out.push({ text: "Total cells = " + fmt(t) + " cells/mL \u00d7 " + fmt(num(e.resusp)) + " mL = " + fmt(t * num(e.resusp)), ok: null });
     (Array.isArray(e.perFlask) ? e.perFlask : []).forEach(function (f) { if (t > 0 && num(f.cells) != null) out.push({ text: (f.label || f.type) + ": " + fmt(num(f.cells)) + " cells \u00f7 " + fmt(t) + " cells/mL = " + vol(num(f.cells) / t) + (WELLS[f.type] ? " per well" : " per flask") + (f.n > 1 ? " (\u00d7" + f.n + ")" : ""), ok: null }); });
     var g = num(e.target);
     if (g != null && t > 0) out.push({ text: "Volume to add = " + fmt(g) + " cells \u00f7 " + fmt(t) + " cells/mL = " + vol(g / t), ok: v == null ? null : close(v, g / t), mine: v });
@@ -1514,7 +1527,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
   (function () {
     var G = {
       split: ["f_split"], diss: ["f_rinse", "f_dissType", "f_dissBrand", "f_dissCat", "f_dissExp", "f_dissConc", "f_dissVol", "f_dissTemp", "f_dissTime"],
-      cen: ["f_cenSpeed", "f_cenTime"], counts: ["f_c1", "f_c2", "f_target", "f_avg", "f_vol", "f_seeded"], coating: ["f_coating", "f_coatingExp"],
+      cen: ["f_cenSpeed", "f_cenTime"], counts: ["f_c1", "f_c2", "f_resusp", "f_target", "f_avg", "f_vol", "f_seeded"], coating: ["f_coating", "f_coatingExp"],
       passage: ["f_passage"], conf: ["f_conf"], myco: ["f_myco"], media: ["f_media"]
     };
     Object.keys(G).forEach(function (g) { GEL[g] = G[g].map(function (id) { return $(id).closest("label"); }); });
@@ -1535,7 +1548,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
   // Doc keys cleared when a group is hidden, so a hidden pre-filled default is never saved.
   var GKEYS = {
     split: { s: ["split"] }, diss: { s: ["rinse", "dissType", "dissBrand", "dissCat", "dissExp", "dissConc"], n: ["dissVol", "dissTemp", "dissTime"] },
-    cen: { s: ["cenSpeed"], n: ["cenTime"] }, counts: { n: ["c1", "c2", "avg", "vol", "seeded"] }, coating: { s: ["coating", "coatingExp"] },
+    cen: { s: ["cenSpeed"], n: ["cenTime"] }, counts: { n: ["c1", "c2", "resusp", "avg", "vol", "seeded", "totalCells"] }, coating: { s: ["coating", "coatingExp"] },
     passage: { s: ["passage"] }, conf: { n: ["conf"] }, myco: { s: ["myco"] }, media: { s: ["media"] },
     thaw: { s: ["frozenDate", "freezeMedia", "freezeMediaExp", "frozenBy", "vialId"], n: ["thawMediaVol"] }, medvol: { n: ["mediaVol"] }
   };
@@ -1658,8 +1671,63 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     c.sort(function (a, b) { return (b.line ? 1 : 0) - (a.line ? 1 : 0) || (b.version || "").localeCompare(a.version || "") || (b.createdAt || 0) - (a.createdAt || 0); });
     return c.length ? c[0].id : null;
   }
+  // Media change: the flasks come from the last saved passage or thaw, each with its own "media added" box (a volume or words).
+  state.medRows = [];
+  function mediaText(e) {
+    var pf = Array.isArray(e && e.mediaPerFlask) ? e.mediaPerFlask.filter(function (x) { return String(x.value || "").trim(); }) : [];
+    if (pf.length) return pf.map(function (x) { var v = String(x.value).trim(); return x.label + ": " + v + (/^\d+(\.\d+)?$/.test(v) ? " mL" : ""); }).join("; ");
+    var v = e && e.mediaVol; if (v == null || v === "") return ""; return typeof v === "number" ? fmt(v) + " mL" : String(v);
+  }
+  function lastFlaskEntry() {
+    var line = state.tab, xp = state.expSel[line];
+    var withF = state.entries.filter(function (e) { return e.line === line && e.action !== "Change media" && flasksOf(e).length; });
+    var inExp = withF.filter(function (e) { return xp && e.exp === xp; }), pool = inExp.length ? inExp : withF;
+    return pool.sort(function (a, b) { return String(b.date || "").localeCompare(String(a.date || "")) || (b.createdAt || 0) - (a.createdAt || 0); })[0] || null;
+  }
+  function renderMedFlasks(vals, src) {
+    var box = $("medFlasks"), rows = state.medRows;
+    $("medAllLbl").classList.toggle("gone", rows.length > 0);
+    if (!rows.length) { box.innerHTML = ""; return; }
+    box.innerHTML = "<b>Media added to each flask</b>" + (src ? ' <span class="sub">(flasks from the ' + esc(src.action || "") + " on " + esc(src.date || "?") + ")</span>" : "") +
+      '<div class="sub">Type a volume (e.g. 12 mL) or words (e.g. not changed).</div><div class="grid" style="margin-top:4px">' +
+      rows.map(function (rw, ix) { return "<label>" + esc(rw.label) + '<input data-mf="' + ix + '" placeholder="e.g. 12 mL" value="' + esc((vals && vals[ix]) || "") + '"></label>'; }).join("") +
+      '</div><div style="margin-top:6px"><button type="button" class="small" id="medSame">Same for all flasks</button></div>';
+  }
+  function setupMedFlasks() {
+    if (state.editing || $("f_action").value !== "Change media" || !isLine(state.tab)) return;
+    var src = lastFlaskEntry(), rows = [];
+    if (src) flasksOf(src).forEach(function (f) { for (var q = 0; q < (f.n || 1); q++) rows.push({ type: f.type, label: f.type + (f.n > 1 ? " #" + (q + 1) : "") }); });
+    var old = {}; state.medRows.forEach(function (rw, ix) { var el = $("medFlasks").querySelector('[data-mf="' + ix + '"]'); if (el) old[rw.label] = el.value; });
+    state.medRows = rows; renderMedFlasks(rows.map(function (rw) { return old[rw.label] || ""; }), src);
+  }
+  $("medFlasks").addEventListener("click", function (ev) {
+    if (!ev.target.closest("#medSame")) return;
+    var ins = $("medFlasks").querySelectorAll("[data-mf]"), v = ins.length ? ins[0].value : "";
+    [].forEach.call(ins, function (el) { el.value = v; });
+  });
+  // Passage number from the last saved entry: Passage adds 1; Feed, Freeze and Harvest keep it. Typed numbers are never overwritten.
+  function lastPassageEntry() {
+    var line = state.tab, xp = state.expSel[line];
+    var withP = state.entries.filter(function (e) { return e.line === line && String(e.passage || "").trim() && /\d/.test(String(e.passage)); });
+    var inExp = withP.filter(function (e) { return xp && e.exp === xp; }), pool = inExp.length ? inExp : withP;
+    return pool.sort(function (a, b) { return String(b.date || "").localeCompare(String(a.date || "")) || (b.createdAt || 0) - (a.createdAt || 0); })[0] || null;
+  }
+  function autoPassage() {
+    var act = $("f_action").value, el = $("f_passage"), h = $("h_pass");
+    if (state.editing || !isLine(state.tab)) { h.textContent = ""; return; }
+    var mine = el.value.trim() && el.value.trim() !== state.passAuto;
+    var last = lastPassageEntry(), v = "";
+    if (last && act === "Passage") v = nextPassage(last.passage);
+    else if (last && (act === "Feed" || act === "Freeze" || act === "Harvest")) v = String(last.passage).trim();
+    if (mine) return;
+    el.value = v; state.passAuto = v;
+    h.className = "hint"; h.textContent = v ? "From the last entry (" + String(last.passage).trim() + " on " + (last.date || "?") + ")" + (act === "Passage" ? ", plus 1" : "") : "";
+  }
+  $("f_passage").addEventListener("input", function () { $("h_pass").textContent = ""; });
   function onActionChange() {
     var act = $("f_action").value;
+    if (act !== "Thaw") try { autoPassage(); } catch (e) {}
+    if (act === "Change media") try { setupMedFlasks(); } catch (e) {} else if (!state.editing) { state.medRows = []; renderMedFlasks(); }
     if (!state.editing) { var pid = protocolFor(act); $("f_protocol").value = pid || ""; applyActionDefaults(act); entryFl.refresh(); try { preCalc(); } catch (e) {} }
     renderCustomFields(customDef(act), null);
     updateThawHint();
@@ -2520,7 +2588,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
   };
 
   // ---------- entry form ----------
-  var F = ["date", "passage", "action", "split", "frozenDate", "freezeMedia", "freezeMediaExp", "frozenBy", "vialId", "mediaVol", "protocol", "rinse", "dissType", "dissBrand", "dissCat", "dissExp", "dissConc", "dissVol", "dissTemp", "dissTime", "coating", "coatingExp", "cenSpeed", "cenTime", "thawMediaVol", "c1", "c2", "target", "avg", "vol", "seeded", "media", "conf", "myco", "notes"];
+  var F = ["date", "passage", "action", "split", "frozenDate", "freezeMedia", "freezeMediaExp", "frozenBy", "vialId", "mediaVol", "protocol", "rinse", "dissType", "dissBrand", "dissCat", "dissExp", "dissConc", "dissVol", "dissTemp", "dissTime", "coating", "coatingExp", "cenSpeed", "cenTime", "thawMediaVol", "c1", "c2", "resusp", "target", "avg", "vol", "seeded", "media", "conf", "myco", "notes"];
   var T = ["rinse", "dissType", "dissBrand", "dissCat", "dissExp", "dissConc", "dissVol", "dissTemp", "dissTime", "coating", "coatingExp", "cenSpeed", "cenTime", "thawMediaVol", "freezeMedia"];
   // Media batch, protocol and cells to seed are not defaults: cells to seed depends on how many flasks are seeded, the batch changes between experiments, and the protocol is picked from the action.
   function curLine() { return state.lines.filter(function (l) { return l.name === state.tab; })[0] || null; }
@@ -2530,6 +2598,8 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     $("f_media").value = ""; $("f_target").value = ""; $("f_protocol").value = protocolFor($("f_action").value) || "";
     entryFl.set(t.flasks || []);
     applyActionDefaults($("f_action").value);
+    if ($("f_action").value !== "Thaw") try { state.passAuto = ""; autoPassage(); } catch (e) {}
+    try { state.medRows = []; setupMedFlasks(); if (!state.medRows.length) renderMedFlasks(); } catch (e) {}
   }
   // Values that one action's protocol sets differently from the cell line's usual defaults (e.g. Thaw spins at 300 x g, Passage at 200 x g).
   function applyActionDefaults(act) {
@@ -2665,7 +2735,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
   function resetEntryForm() {
     F.forEach(function (k) { $("f_" + k).value = ""; }); $("f_flag").checked = false;
     $("f_date").value = today();
-    $("f_photo").value = ""; $("f_photoDesc").value = ""; state.eKeep = []; state.ePend = []; renderEPhotos();
+    $("f_photo").value = ""; $("f_photoDesc").value = ""; state.eKeep = []; state.ePend = []; renderEPhotos(); state.medRows = []; renderMedFlasks();
     state.pf = {}; state.pfUsed = false; state.editing = null; applyTemplate(); renderCustomFields(null, null); state.vialPassage = ""; $("dissScanOut").textContent = ""; ["dissType", "dissExp", "dissBrand", "dissCat", "dissConc"].forEach(function (k) { $("f_" + k).classList.remove("warn"); });
     $("formTitle").textContent = "New entry"; $("saveBtn").textContent = "Save entry"; $("cancelEdit").hidden = true;
     $("formLine").textContent = isLine(state.tab) ? state.tab : "";
@@ -2721,6 +2791,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     var h = '<div class="rem">⚠ Worked out by the app. Please check these numbers yourself before you seed.</div>';
     if (t == null) { box.innerHTML = '<span class="sub">Enter both counts: the average and the volume to add are worked out straight away.</span>'; return; }
     h += "<div>Average = (" + esc(fmt(c1)) + " + " + esc(fmt(c2)) + ") ÷ 2 = <b>" + esc(fmt(t)) + " cells/mL</b></div>";
+    var rv = num($("f_resusp").value); if (rv != null && rv > 0) h += "<div>Total cells = " + esc(fmt(t)) + " cells/mL × " + esc(fmt(rv)) + " mL = <b>" + esc(cellsTxt(t * rv)) + " cells</b></div>";
     if (!ok) h += '<div class="badt">The average is 0, so no volume can be worked out.</div>';
     else if (g == null) h += '<div class="sub">' + (rows.length ? "Type the cells for each flask in the table above." : "Enter the cells to seed to get the volume to add.") + "</div>";
     else {
@@ -2746,7 +2817,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     });
   }
   $("f_action").addEventListener("change", onActionChange);
-  ["f_c1", "f_c2", "f_target", "f_avg", "f_vol", "f_seeded"].forEach(function (id) { $(id).addEventListener("input", liveCheck); });
+  ["f_c1", "f_c2", "f_resusp", "f_target", "f_avg", "f_vol", "f_seeded"].forEach(function (id) { $(id).addEventListener("input", liveCheck); });
   $("f_protocol").addEventListener("change", function () { entryFl.refresh(); try { preCalc(); } catch (e) {} });
 
   $("entryForm").addEventListener("submit", async function (ev) {
@@ -2764,7 +2835,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
       flasks: entryFl.get(), flask: flaskText(entryFl.get()), nflasks: flaskTotal(entryFl.get()),
       rinse: $("f_rinse").value.trim(), dissType: $("f_dissType").value.trim(), dissBrand: $("f_dissBrand").value.trim(), dissCat: $("f_dissCat").value.trim(), dissExp: $("f_dissExp").value, dissConc: $("f_dissConc").value.trim(),
       dissVol: num($("f_dissVol").value), dissTemp: num($("f_dissTemp").value), dissTime: num($("f_dissTime").value), coating: $("f_coating").value.trim(), coatingExp: $("f_coatingExp").value,
-      c1: num($("f_c1").value), c2: num($("f_c2").value), target: num($("f_target").value), perFlask: pfList(), avg: num($("f_avg").value), vol: num($("f_vol").value), seeded: num($("f_seeded").value),
+      c1: num($("f_c1").value), c2: num($("f_c2").value), resusp: num($("f_resusp").value), totalCells: totalOf({ c1: num($("f_c1").value), c2: num($("f_c2").value), resusp: num($("f_resusp").value) }), target: num($("f_target").value), perFlask: pfList(), avg: num($("f_avg").value), vol: num($("f_vol").value), seeded: num($("f_seeded").value),
       media: $("f_media").value.trim(), conf: num($("f_conf").value), myco: $("f_myco").value, notes: $("f_notes").value.trim(), flag: $("f_flag").checked,
       createdAt: prev && prev.createdAt ? prev.createdAt : Date.now()
     };
@@ -2772,9 +2843,13 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     doc.custom = readCustomFields();
     doc.vialId = isThaw ? $("f_vialId").value.trim() : ""; if (isThaw && !prev && state.vialPassage) doc.vialPassage = state.vialPassage; doc.cenSpeed = $("f_cenSpeed").value.trim(); doc.cenTime = num($("f_cenTime").value); doc.thawMediaVol = isThaw ? num($("f_thawMediaVol").value) : null;
     if (isThaw) { ["split", "rinse", "dissType", "dissBrand", "dissCat", "dissExp", "dissConc"].forEach(function (k) { doc[k] = ""; }); ["dissVol", "dissTemp", "dissTime", "c1", "c2", "avg", "vol", "seeded"].forEach(function (k) { doc[k] = null; }); }
-    doc.mediaVol = $("f_action").value === "Change media" ? num($("f_mediaVol").value) : null;
+    // Media added: one box per flask (from the last passage or thaw) or one box for all; numbers or words ("not changed").
+    var mv = $("f_mediaVol").value.trim();
+    doc.mediaVol = $("f_action").value === "Change media" && !state.medRows.length && mv ? (/^\s*\d+(\.\d+)?\s*(ml)?\s*$/i.test(mv) ? num(mv.replace(/ml/i, "")) : mv) : null;
+    doc.mediaPerFlask = $("f_action").value === "Change media" ? state.medRows.map(function (rw, ix) { var el = $("medFlasks").querySelector('[data-mf="' + ix + '"]'); return { label: rw.label, type: rw.type, value: el ? el.value.trim() : "" }; }) : [];
     if ($("f_action").value === "Change media") { doc.passage = ""; doc.flasks = []; doc.flask = ""; doc.nflasks = 0; doc.coating = ""; doc.coatingExp = ""; doc.conf = null; doc.myco = ""; ["split", "rinse", "dissType", "dissBrand", "dissCat", "dissExp", "dissConc", "cenSpeed"].forEach(function (k) { doc[k] = ""; }); ["dissVol", "dissTemp", "dissTime", "c1", "c2", "avg", "vol", "seeded", "cenTime"].forEach(function (k) { doc[k] = null; }); }
     blankHidden(doc, visFor(doc.action));
+    doc.createdAt = prev && prev.createdAt ? prev.createdAt : Date.now(); // tells apart entries saved on the same day
     if (prev) { if (prev.exp) doc.exp = prev.exp; } else if (!startNew) doc.exp = xp.id;
     try {
       var photos = state.editing ? state.eKeep.slice() : [];
@@ -2821,13 +2896,37 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     var vk = state.tab + "|" + selId;
     if (state.calFor !== vk) { state.calFor = vk; var ds = rows.map(function (e) { return e.date || ""; }).filter(Boolean).sort(); state.calDate = xp && xp.end && ds.length ? ds[ds.length - 1] : today(); }
     if (!state.calDate) state.calDate = today();
-    var isLog = state.view === "log";
+    var isLog = state.view === "log", isCorr = state.view === "corr";
+    $("corrBox").hidden = !isCorr;
+    if (isCorr) { [].forEach.call($("viewBar").querySelectorAll("[data-view]"), function (b) { b.setAttribute("aria-pressed", String(b.dataset.view === state.view)); }); $("calNav").hidden = true; $("calBox").hidden = true; $("logTable").hidden = true; renderCorr(rows); return; }
     [].forEach.call($("viewBar").querySelectorAll("[data-view]"), function (b) { b.setAttribute("aria-pressed", String(b.dataset.view === state.view)); });
     $("weekStart").value = String(state.weekStart); $("calNav").hidden = isLog; $("calBox").hidden = isLog; $("logTable").hidden = !isLog;
     if (!isLog) { calRender(rows); return; }
     if (!rows.length) { $("logTable").innerHTML = '<div class="empty">' + (selId ? "No entries yet. Fill in the form above to log the first one." : "No experiment yet. Log a Thaw below, or press Start new experiment above, to begin.") + '</div>'; return; }
     $("logTable").innerHTML = tableHtml(rows); labelCells($("logTable"));
   }
+  // Total cells (average count x resuspension volume) against confluence, as a 3-column table and a scatter graph with Pearson r.
+  function renderCorr(expRows) {
+    var all = state.corrAll !== false, src = all ? state.entries.filter(function (e) { return e.line === state.tab; }) : expRows;
+    var pts = src.map(function (e) { return { d: e.date || "", x: num(e.conf), y: e.totalCells != null ? num(e.totalCells) : totalOf(e) }; }).filter(function (p) { return p.x != null && p.y != null; }).sort(function (a, b) { return a.d.localeCompare(b.d); });
+    var h = '<div class="actions" style="margin-top:0"><label class="inl">Show <select id="corrScope"><option value="all"' + (all ? " selected" : "") + ">All experiments for " + esc(state.tab) + '</option><option value="exp"' + (all ? "" : " selected") + ">This experiment only</option></select></label></div>";
+    if (!pts.length) { $("corrBox").innerHTML = h + '<div class="empty">No entries have both a confluence and a total cell count yet. Total cells needs both counts and "Resuspended in (mL)".</div>'; return; }
+    var n = pts.length, mx = 0, my = 0; pts.forEach(function (p) { mx += p.x; my += p.y; }); mx /= n; my /= n;
+    var sxy = 0, sxx = 0, syy = 0; pts.forEach(function (p) { sxy += (p.x - mx) * (p.y - my); sxx += (p.x - mx) * (p.x - mx); syy += (p.y - my) * (p.y - my); });
+    var rr = n >= 3 && sxx > 0 && syy > 0 ? sxy / Math.sqrt(sxx * syy) : null, slope = sxx > 0 ? sxy / sxx : null;
+    h += '<div class="sub">' + n + (n === 1 ? " entry" : " entries") + " with both values." + (rr != null ? " Pearson r = <b>" + rr.toFixed(2) + "</b> (r\u00b2 = " + (rr * rr).toFixed(2) + ")." : " At least 3 entries are needed for a correlation.") + "</div>";
+    var W = 560, H = 320, L = 70, R = 16, T = 14, B = 46, ymax = Math.max.apply(null, pts.map(function (p) { return p.y; })) * 1.1 || 1, xmax = 100;
+    var X = function (v) { return L + v / xmax * (W - L - R); }, Y = function (v) { return H - B - v / ymax * (H - T - B); };
+    var g = '<svg viewBox="0 0 ' + W + " " + H + '" class="corrsvg" role="img" aria-label="Total cells against confluence">';
+    for (var i = 0; i <= 5; i++) { var xv = i * 20, yv = ymax * i / 5; g += '<line x1="' + X(xv) + '" y1="' + (H - B) + '" x2="' + X(xv) + '" y2="' + T + '" class="cg"/><text x="' + X(xv) + '" y="' + (H - B + 16) + '" text-anchor="middle" class="ct">' + xv + '</text><line x1="' + L + '" y1="' + Y(yv) + '" x2="' + (W - R) + '" y2="' + Y(yv) + '" class="cg"/><text x="' + (L - 6) + '" y="' + (Y(yv) + 4) + '" text-anchor="end" class="ct">' + esc(yv >= 1e5 ? yv.toExponential(1).replace("e+", "e") : cellsTxt(yv)) + "</text>"; }
+    g += '<text x="' + ((L + W - R) / 2) + '" y="' + (H - 8) + '" text-anchor="middle" class="cl">Confluence (%)</text><text transform="translate(14 ' + ((T + H - B) / 2) + ') rotate(-90)" text-anchor="middle" class="cl">Total cells</text>';
+    if (slope != null && n >= 2) { var b0 = my - slope * mx, x0 = Math.min.apply(null, pts.map(function (p) { return p.x; })), x1 = Math.max.apply(null, pts.map(function (p) { return p.x; })); g += '<line x1="' + X(x0) + '" y1="' + Y(Math.max(0, b0 + slope * x0)) + '" x2="' + X(x1) + '" y2="' + Y(Math.max(0, b0 + slope * x1)) + '" class="cf"/>'; }
+    pts.forEach(function (p) { g += '<circle cx="' + X(Math.min(p.x, 100)) + '" cy="' + Y(p.y) + '" r="5" class="cp"><title>' + esc(p.d + ": " + fmt(p.x) + "% confluence, " + cellsTxt(p.y) + " cells") + "</title></circle>"; });
+    g += "</svg>";
+    var t = '<table class="corrt"><thead><tr><th>Date</th><th>Total cells</th><th>Confluence (%)</th></tr></thead><tbody>' + pts.map(function (p) { return "<tr><td>" + esc(p.d) + "</td><td>" + esc(cellsTxt(p.y)) + "</td><td>" + esc(fmt(p.x)) + "</td></tr>"; }).join("") + "</tbody></table>";
+    $("corrBox").innerHTML = h + '<div class="corrwrap">' + g + t + "</div>";
+  }
+  document.addEventListener("change", function (ev) { if (ev.target && ev.target.id === "corrScope") { state.corrAll = ev.target.value === "all"; renderEntries(); } });
   function tableHtml(rows) {
     var h = "<table><thead><tr><th>Date</th><th>Passage #</th><th>Action</th><th>Split ratio</th><th>Thaw details</th><th>Flasks seeded</th><th>Coating</th><th>Rinse</th><th>Dissociation</th><th>Centrifuge</th><th>Protocol fields</th><th>Count 1</th><th>Count 2</th><th>Average count (yours)</th><th>Volume added (mL)</th><th>Cells seeded (yours)</th><th>Calculated by Claude</th><th>Media batch ID</th><th>Confluence (%)</th><th>Mycoplasma</th><th>Protocol</th><th>Notes</th><th>Photo</th><th></th></tr></thead><tbody>";
     rows.forEach(function (e) {
@@ -2842,7 +2941,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
         [num(e.dissVol) != null ? fmt(num(e.dissVol)) + " mL" : "", num(e.dissTemp) != null ? fmt(num(e.dissTemp)) + " \u00b0C" : "", num(e.dissTime) != null ? fmt(num(e.dissTime)) + " min" : ""].filter(Boolean).join(", ")].filter(Boolean).map(esc).join("<br>");
       h += "<tr" + (e.flag ? ' class="flagged"' : "") + "><td>" + esc(e.date) + "</td><td>" + esc(e.passage) + "</td><td>" + esc(e.action) + "</td><td>" + esc(e.split) + "</td><td>" + [e.frozenDate, e.freezeMedia && e.freezeMedia + (e.freezeMediaExp ? " (" + expTxt(e.freezeMediaExp) + ")" : ""), e.frozenBy && "by " + e.frozenBy, e.vialId && "vial " + e.vialId, num(e.thawMediaVol) != null ? "media added " + fmt(num(e.thawMediaVol)) + " mL" : ""].filter(Boolean).map(esc).join("<br>") + "</td><td>" + esc(flTxt) + "</td><td>" + esc(e.coating) + (e.coatingExp ? "<small>" + esc(expTxt(e.coatingExp)) + "</small>" : "") + "</td><td>" + esc(e.rinse) + "</td><td>" + dis + "</td><td>" + [e.cenSpeed, num(e.cenTime) != null ? fmt(num(e.cenTime)) + " min" : ""].filter(Boolean).map(esc).join("<br>") + "</td><td>" + (e.custom || []).map(function (c) { return "<div>" + esc(c.label) + ": " + esc(c.value) + (c.unit ? " " + esc(c.unit) : "") + "</div>"; }).join("") + "</td>" +
         "<td>" + esc(fmt(num(e.c1))) + "</td><td>" + esc(fmt(num(e.c2))) + "</td>" + cell(num(e.avg), c.avg) + "<td>" + esc(fmt(num(e.vol))) + "</td>" + cell(num(e.seeded), c.seeded) + '<td class="calc">' + workHtml(e) + "</td>" +
-        "<td>" + esc(e.media) + (num(e.mediaVol) != null ? "<small>" + esc(fmt(num(e.mediaVol))) + " mL added</small>" : "") + "</td><td>" + esc(fmt(num(e.conf))) + "</td><td>" + esc(e.myco) + "</td><td>" + esc(e.protocolName) + '</td><td class="notes">' + (e.flag ? '<span class="flagtag">\u26a0 Flagged</span>' : "") + esc(e.notes) + "</td>" +
+        "<td>" + esc(e.media) + (mediaText(e) ? "<small>Added: " + esc(mediaText(e)) + "</small>" : "") + "</td><td>" + esc(fmt(num(e.conf))) + "</td><td>" + esc(e.myco) + "</td><td>" + esc(e.protocolName) + '</td><td class="notes">' + (e.flag ? '<span class="flagtag">\u26a0 Flagged</span>' : "") + esc(e.notes) + "</td>" +
         "<td>" + entryPhotos(e).map(function (p) { return '<a href="' + esc(p.url) + '" target="_blank" rel="noopener" title="' + esc(p.desc || p.name) + '"><img src="' + esc(p.url) + '" alt="' + esc(p.desc || p.name) + '"></a>'; }).join("") + "</td>" +
         '<td><button class="small" data-edit="' + esc(e.id) + '">Edit</button> <button class="small" data-del="' + esc(e.id) + '">Delete</button></td></tr>';
     });
@@ -2853,6 +2952,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     var b = ev.target.closest("button"); if (!b) return;
     if (b.dataset.edit) {
       var e = state.entries.filter(function (x) { return x.id === b.dataset.edit; })[0]; if (!e) return;
+      state.medRows = (e.mediaPerFlask || []).map(function (x) { return { type: x.type, label: x.label }; }); renderMedFlasks((e.mediaPerFlask || []).map(function (x) { return x.value; }));
       state.editing = e.id; state.eKeep = entryPhotos(e).map(function (p) { return Object.assign({}, p); }); state.ePend = []; renderEPhotos();
       F.forEach(function (k) { var v = e[k]; $("f_" + k).value = v == null ? "" : v; }); $("f_flag").checked = !!e.flag;
       state.pf = {}; state.pfUsed = (e.perFlask || []).length > 0; var pfc = {}; (e.perFlask || []).forEach(function (f) { for (var q = 0; q < (f.n || 1); q++) { pfc[f.type] = pfc[f.type] || 0; state.pf[f.type + "#" + pfc[f.type]++] = f.cells; } }); entryFl.set(flasksOf(e), true); renderPerFlask(); ensureProtocolOption(e.protocol, e.protocolName); renderCustomFor(e); updateEntryVisibility();
@@ -2885,7 +2985,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
   function chipShort(e) { var a = e.action || "Entry"; return (e.flag ? "\u26a0 " : "") + (SHORT[a] || a) + (e.passage ? " " + pLab(e.passage) : ""); }
   function chipDetail(e) {
     var fl = flasksOf(e), parts = [];
-    if (fl.length) parts.push(flaskText(fl)); if (e.media) parts.push("media " + e.media); if (num(e.mediaVol) != null) parts.push(fmt(num(e.mediaVol)) + " mL");
+    if (fl.length) parts.push(flaskText(fl)); if (e.media) parts.push("media " + e.media); if (mediaText(e)) parts.push("media added " + mediaText(e));
     (e.custom || []).forEach(function (c) { parts.push(c.label + " " + c.value + (c.unit ? " " + c.unit : "")); });
     if (e.protocolName) parts.push(e.protocolName);
     return parts.join(" · ");
@@ -3452,10 +3552,10 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     });
     groups.forEach(function (g) {
       var ws = wb.addWorksheet(sheetName(g.name), { views: [{ state: "frozen", ySplit: 1 }] });
-      var cols = ["Date", "Passage #", "Action", "Split ratio", "Flasks seeded (total)", "Flask types", "Coating", "Coating expiry", "Rinse reagent", "Dissociation reagent", "Dissociation brand", "Dissociation cat #", "Dissociation expiry", "Dissociation concentration", "Dissociation volume (mL)", "Incubation temp (\u00b0C)", "Incubation duration (min)", "Count 1 (cells/mL)", "Count 2 (cells/mL)", "Average count (yours)", "Calculated average", "Volume of cells added (mL)", "Cells seeded (yours)", "Calculated cells seeded", "Working", "Media batch ID", "Confluence (%)", "Mycoplasma check", "Notes", "Photo", "Vial frozen on", "Freezing media", "Frozen by", "Freezing media expiry", "Thaw media added (mL)", "Centrifuge speed", "Centrifuge duration (min)", "Vial ID", "Media volume added (mL)"];
+      var cols = ["Date", "Passage #", "Action", "Split ratio", "Flasks seeded (total)", "Flask types", "Coating", "Coating expiry", "Rinse reagent", "Dissociation reagent", "Dissociation brand", "Dissociation cat #", "Dissociation expiry", "Dissociation concentration", "Dissociation volume (mL)", "Incubation temp (\u00b0C)", "Incubation duration (min)", "Count 1 (cells/mL)", "Count 2 (cells/mL)", "Resuspended in (mL)", "Total cells", "Average count (yours)", "Calculated average", "Volume of cells added (mL)", "Cells seeded (yours)", "Calculated cells seeded", "Working", "Media batch ID", "Confluence (%)", "Mycoplasma check", "Notes", "Photo", "Vial frozen on", "Freezing media", "Frozen by", "Freezing media expiry", "Thaw media added (mL)", "Centrifuge speed", "Centrifuge duration (min)", "Vial ID", "Media volume added (mL)"];
       var clabels = [];
       g.rows.forEach(function (e) { (e.custom || []).forEach(function (c) { var L = c.label + (c.unit ? " (" + c.unit + ")" : ""); if (clabels.indexOf(L) < 0) clabels.push(L); }); });
-      var widths = [12, 10, 10, 10, 12, 22, 14, 14, 16, 20, 16, 14, 14, 16, 14, 14, 14, 16, 16, 18, 16, 18, 16, 16, 46, 14, 12, 16, 40, 34, 14, 22, 16, 16, 16, 16, 16, 16, 16];
+      var widths = [12, 10, 10, 10, 12, 22, 14, 14, 16, 20, 16, 14, 14, 16, 14, 14, 14, 16, 16, 14, 16, 18, 16, 18, 16, 16, 46, 14, 12, 16, 40, 34, 14, 22, 16, 16, 16, 16, 16, 16, 16];
       cols = cols.concat(["Protocol"], clabels); widths = widths.concat([22], clabels.map(function () { return 16; }));
       ws.columns = cols.map(function (c, i) { return { header: c, key: "c" + i, width: widths[i] }; });
       ws.getRow(1).eachCell(function (c) { c.font = head.font; c.fill = head.fill; c.alignment = { wrapText: true, vertical: "middle" }; });
@@ -3465,8 +3565,8 @@ window.CCL_GOOGLE_CLIENT_ID = "";
           var fl = flasksOf(e), c = check(e), w = workText(e);
           var r = ws.addRow([e.date || null, e.passage || null, e.action || null, e.split || null, fl.length ? flaskTotal(fl) : null, fl.length ? flaskText(fl) : null, e.coating || null, e.coatingExp || null,
             e.rinse || null, e.dissType || null, e.dissBrand || null, e.dissCat || null, e.dissExp || null, e.dissConc || null, num(e.dissVol), num(e.dissTemp), num(e.dissTime),
-            num(e.c1), num(e.c2), num(e.avg), c.avg ? c.avg.expected : null, num(e.vol), num(e.seeded), c.seeded ? c.seeded.expected : null, w || null,
-            e.media || null, num(e.conf), e.myco || null, (e.flag ? "\u26a0 FLAGGED" + (e.notes ? ": " : "") : "") + (e.notes || "") || null, (entryPhotos(e).map(function (p) { return p.name; }).join("; ") || null), e.frozenDate || null, e.freezeMedia || null, e.frozenBy || null, e.freezeMediaExp || null, num(e.thawMediaVol), e.cenSpeed || null, num(e.cenTime), e.vialId || null, num(e.mediaVol), e.protocolName || null].concat(clabels.map(function (L) { var m = (e.custom || []).filter(function (c) { return c.label + (c.unit ? " (" + c.unit + ")" : "") === L; })[0]; return m ? (m.type === "number" && num(m.value) != null ? num(m.value) : m.value) : null; })));
+            num(e.c1), num(e.c2), num(e.resusp), totalOf(e), num(e.avg), c.avg ? c.avg.expected : null, num(e.vol), num(e.seeded), c.seeded ? c.seeded.expected : null, w || null,
+            e.media || null, num(e.conf), e.myco || null, (e.flag ? "\u26a0 FLAGGED" + (e.notes ? ": " : "") : "") + (e.notes || "") || null, (entryPhotos(e).map(function (p) { return p.name; }).join("; ") || null), e.frozenDate || null, e.freezeMedia || null, e.frozenBy || null, e.freezeMediaExp || null, num(e.thawMediaVol), e.cenSpeed || null, num(e.cenTime), e.vialId || null, mediaText(e) || null, e.protocolName || null].concat(clabels.map(function (L) { var m = (e.custom || []).filter(function (c) { return c.label + (c.unit ? " (" + c.unit + ")" : "") === L; })[0]; return m ? (m.type === "number" && num(m.value) != null ? num(m.value) : m.value) : null; })));
           if (c.avg) r.getCell(cols.indexOf("Average count (yours)") + 1).fill = c.avg.ok ? GREEN : RED;
           if (c.seeded) r.getCell(cols.indexOf("Cells seeded (yours)") + 1).fill = c.seeded.ok ? GREEN : RED;
           r.getCell(cols.indexOf("Working") + 1).alignment = { wrapText: true, vertical: "top" };
@@ -3505,7 +3605,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
   function empty() { $("linePanel").hidden = true; }
   (async function () {
     $("f_date").value = today(); $("m_date").value = today();
-    try { var sv = localStorage.getItem("ccl-view"), sw = localStorage.getItem("ccl-wk"); if (["month", "week", "day", "log"].indexOf(sv) >= 0) state.view = sv; if (sw !== null && sw !== "" && !isNaN(Number(sw))) state.weekStart = Number(sw) % 7; } catch (e) {}
+    try { var sv = localStorage.getItem("ccl-view"), sw = localStorage.getItem("ccl-wk"); if (["month", "week", "day", "log", "corr"].indexOf(sv) >= 0) state.view = sv; if (sw !== null && sw !== "" && !isNaN(Number(sw))) state.weekStart = Number(sw) % 7; } catch (e) {}
     renderTabs(); empty();
     if (!window.claude || !window.claude.use) { setStatus("Saved data is not available in this view."); return; }
     var got = await Promise.all([window.claude.use("db"), window.claude.use("assets"), window.claude.use("downloads"), window.claude.use("sample")]);
@@ -3538,6 +3638,8 @@ window.CCL_GOOGLE_CLIENT_ID = "";
       state.entries = s.docs.map(function (d) { var o = Object.assign({}, d.data(), { id: d.id }); if (o.action === "Split") o.action = "Passage"; return o; }); // older entries said Split
       if (REV) renderReview();
       if (isLine(state.tab)) { renderExpBar(); renderEntries(); }
+      if (isLine(state.tab) && !state.editing && $("f_action").value !== "Thaw" && (!$("f_passage").value.trim() || $("f_passage").value.trim() === state.passAuto)) try { autoPassage(); } catch (e) {}
+      if (isLine(state.tab) && !state.editing) try { setupMedFlasks(); } catch (e) {}
       done("entries");
     }, onErr);
     state.db.collection("experiments").onSnapshot(function (s) {
