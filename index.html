@@ -1225,7 +1225,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     <div class="panel">
       <div class="panel-head"><h2 id="logTitle">Log</h2><span class="sub" id="logCount"></span></div>
       <div class="viewbar" id="viewBar">
-        <div class="seg" role="group" aria-label="Log view"><button type="button" data-view="month">Month</button><button type="button" data-view="week">Week</button><button type="button" data-view="day">Day</button><button type="button" data-view="log">Log</button><button type="button" data-view="corr">Cells vs confluence</button></div>
+        <div class="seg" role="group" aria-label="Log view"><button type="button" data-view="month">Month</button><button type="button" data-view="week">Week</button><button type="button" data-view="day">Day</button><button type="button" data-view="log">Log</button><button type="button" data-view="corr">Cells/cm² vs confluence</button></div>
         <div class="calnav" id="calNav"><button type="button" data-nav="prev" aria-label="Previous">‹</button><button type="button" data-nav="today">Today</button><button type="button" data-nav="next" aria-label="Next">›</button><b id="calTitle" role="status"></b>
           <label class="inl">Week starts on <select id="weekStart"><option value="1">Monday</option><option value="2">Tuesday</option><option value="3">Wednesday</option><option value="4">Thursday</option><option value="5">Friday</option><option value="6">Saturday</option><option value="0">Sunday</option></select></label></div>
       </div>
@@ -3036,28 +3036,46 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     if (!rows.length) { $("logTable").innerHTML = '<div class="empty">' + (selId ? "No entries yet. Fill in the form above to log the first one." : "No experiment yet. Log a Thaw below, or press Start new experiment above, to begin.") + '</div>'; return; }
     $("logTable").innerHTML = tableHtml(rows); labelCells($("logTable"));
   }
-  // Total cells (average count x resuspension volume) against confluence, as a 3-column table and a scatter graph with Pearson r.
+  // Growth area the cells came from: the trypsinized flasks (or, for older entries, every flask of the previous passage or thaw),
+  // using the area logged with those flasks, else the protocol's or usual area. A plate counts all its wells.
+  function prevFlaskEntryBefore(e) {
+    var c = state.entries.filter(function (x) { return x.id !== e.id && x.line === e.line && x.action !== "Change media" && flasksOf(x).length && (String(x.date || "") < String(e.date || "") || (x.date === e.date && (x.createdAt || 0) < (e.createdAt || 0))); });
+    return c.sort(function (a, b) { return String(b.date || "").localeCompare(String(a.date || "")) || (b.createdAt || 0) - (a.createdAt || 0); })[0] || null;
+  }
+  function areaOfLabels(e, labels) {
+    var prev = prevFlaskEntryBefore(e); if (!prev) return null;
+    var pp = state.protocols.filter(function (x) { return x.id === prev.protocol; })[0], fl = flasksOf(prev), tot = 0;
+    if (!labels) { labels = []; fl.forEach(function (f) { for (var q = 0; q < (f.n || 1); q++) labels.push(f.type); }); }
+    for (var i = 0; i < labels.length; i++) {
+      var t = String(labels[i]).split(" #")[0], f = fl.filter(function (x) { return x.type === t; })[0];
+      var a = f && num(f.area) > 0 ? num(f.area) : areaOf(t, pp); if (!(a > 0)) return null;
+      tot += a * (WELLS[t] || 1);
+    }
+    return tot > 0 ? tot : null;
+  }
+  // Cells/cm² (total cells / growth area they came from) against confluence, as a 3-column table and a scatter graph with Pearson r.
   function renderCorr(expRows) {
     var all = state.corrAll !== false, src = all ? state.entries.filter(function (e) { return e.line === state.tab; }) : expRows;
-    var pts = []; src.forEach(function (e) {
-      if (Array.isArray(e.sources) && e.sources.length) e.sources.forEach(function (x) { pts.push({ d: e.date || "", f: x.label, x: num(x.conf), y: x.totalCells != null ? num(x.totalCells) : totalOf(x) }); });
-      else pts.push({ d: e.date || "", x: num(e.conf), y: e.totalCells != null ? num(e.totalCells) : totalOf(e) });
-    }); pts = pts.filter(function (p) { return p.x != null && p.y != null; }).sort(function (a, b) { return a.d.localeCompare(b.d); });
+    var pts = [], noArea = 0; src.forEach(function (e) {
+      if (Array.isArray(e.sources) && e.sources.length) e.sources.forEach(function (x) { pts.push({ d: e.date || "", f: x.label, x: num(x.conf), tc: x.totalCells != null ? num(x.totalCells) : totalOf(x), a: areaOfLabels(e, [x.label]) }); });
+      else pts.push({ d: e.date || "", f: (e.fromFlasks || []).length > 1 ? e.fromFlasks.join(" + ") : (e.fromFlasks || [])[0] || "", x: num(e.conf), tc: e.totalCells != null ? num(e.totalCells) : totalOf(e), a: areaOfLabels(e, (e.fromFlasks || []).length ? e.fromFlasks : null) });
+    });
+    pts = pts.filter(function (p) { if (p.x == null || p.tc == null) return false; if (!p.a) { noArea++; return false; } p.y = p.tc / p.a; return true; }).sort(function (a, b) { return a.d.localeCompare(b.d); });
     var h = '<div class="actions" style="margin-top:0"><label class="inl">Show <select id="corrScope"><option value="all"' + (all ? " selected" : "") + ">All experiments for " + esc(state.tab) + '</option><option value="exp"' + (all ? "" : " selected") + ">This experiment only</option></select></label></div>";
-    if (!pts.length) { $("corrBox").innerHTML = h + '<div class="empty">No entries have both a confluence and a total cell count yet. Total cells needs both counts and "Resuspended in (mL)".</div>'; return; }
+    if (!pts.length) { $("corrBox").innerHTML = h + '<div class="empty">No entries have a confluence, a total cell count and a known flask area yet. Total cells needs both counts and "Resuspended in (mL)"; the area comes from the flasks of the passage or thaw before.' + (noArea ? " " + noArea + " entr" + (noArea === 1 ? "y has" : "ies have") + " no known flask area." : "") + "</div>"; return; }
     var n = pts.length, mx = 0, my = 0; pts.forEach(function (p) { mx += p.x; my += p.y; }); mx /= n; my /= n;
     var sxy = 0, sxx = 0, syy = 0; pts.forEach(function (p) { sxy += (p.x - mx) * (p.y - my); sxx += (p.x - mx) * (p.x - mx); syy += (p.y - my) * (p.y - my); });
     var rr = n >= 3 && sxx > 0 && syy > 0 ? sxy / Math.sqrt(sxx * syy) : null, slope = sxx > 0 ? sxy / sxx : null;
-    h += '<div class="sub">' + n + (n === 1 ? " entry" : " entries") + " with both values." + (rr != null ? " Pearson r = <b>" + rr.toFixed(2) + "</b> (r\u00b2 = " + (rr * rr).toFixed(2) + ")." : " At least 3 entries are needed for a correlation.") + "</div>";
+    h += '<div class="sub">Cells/cm\u00b2 = total cells \u00f7 growth area of the flasks they came from. ' + n + (n === 1 ? " count" : " counts") + " with both values." + (noArea ? " " + noArea + " left out: flask area not known." : "") + (rr != null ? " Pearson r = <b>" + rr.toFixed(2) + "</b> (r\u00b2 = " + (rr * rr).toFixed(2) + ")." : " At least 3 counts are needed for a correlation.") + "</div>";
     var W = 560, H = 320, L = 70, R = 16, T = 14, B = 46, ymax = Math.max.apply(null, pts.map(function (p) { return p.y; })) * 1.1 || 1, xmax = 100;
     var X = function (v) { return L + v / xmax * (W - L - R); }, Y = function (v) { return H - B - v / ymax * (H - T - B); };
-    var g = '<svg viewBox="0 0 ' + W + " " + H + '" class="corrsvg" role="img" aria-label="Total cells against confluence">';
+    var g = '<svg viewBox="0 0 ' + W + " " + H + '" class="corrsvg" role="img" aria-label="Cells per cm squared against confluence">';
     for (var i = 0; i <= 5; i++) { var xv = i * 20, yv = ymax * i / 5; g += '<line x1="' + X(xv) + '" y1="' + (H - B) + '" x2="' + X(xv) + '" y2="' + T + '" class="cg"/><text x="' + X(xv) + '" y="' + (H - B + 16) + '" text-anchor="middle" class="ct">' + xv + '</text><line x1="' + L + '" y1="' + Y(yv) + '" x2="' + (W - R) + '" y2="' + Y(yv) + '" class="cg"/><text x="' + (L - 6) + '" y="' + (Y(yv) + 4) + '" text-anchor="end" class="ct">' + esc(yv >= 1e5 ? yv.toExponential(1).replace("e+", "e") : cellsTxt(yv)) + "</text>"; }
-    g += '<text x="' + ((L + W - R) / 2) + '" y="' + (H - 8) + '" text-anchor="middle" class="cl">Confluence (%)</text><text transform="translate(14 ' + ((T + H - B) / 2) + ') rotate(-90)" text-anchor="middle" class="cl">Total cells</text>';
+    g += '<text x="' + ((L + W - R) / 2) + '" y="' + (H - 8) + '" text-anchor="middle" class="cl">Confluence (%)</text><text transform="translate(14 ' + ((T + H - B) / 2) + ') rotate(-90)" text-anchor="middle" class="cl">Cells/cm\u00b2</text>';
     if (slope != null && n >= 2) { var b0 = my - slope * mx, x0 = Math.min.apply(null, pts.map(function (p) { return p.x; })), x1 = Math.max.apply(null, pts.map(function (p) { return p.x; })); g += '<line x1="' + X(x0) + '" y1="' + Y(Math.max(0, b0 + slope * x0)) + '" x2="' + X(x1) + '" y2="' + Y(Math.max(0, b0 + slope * x1)) + '" class="cf"/>'; }
-    pts.forEach(function (p) { g += '<circle cx="' + X(Math.min(p.x, 100)) + '" cy="' + Y(p.y) + '" r="5" class="cp"><title>' + esc(p.d + ": " + fmt(p.x) + "% confluence, " + cellsTxt(p.y) + " cells") + "</title></circle>"; });
+    pts.forEach(function (p) { g += '<circle cx="' + X(Math.min(p.x, 100)) + '" cy="' + Y(p.y) + '" r="5" class="cp"><title>' + esc(p.d + (p.f ? " " + p.f : "") + ": " + fmt(p.x) + "% confluence, " + cellsTxt(p.y) + " cells/cm\u00b2") + "</title></circle>"; });
     g += "</svg>";
-    var t = '<table class="corrt"><thead><tr><th>Date</th><th>Total cells</th><th>Confluence (%)</th></tr></thead><tbody>' + pts.map(function (p) { return "<tr><td>" + esc(p.d) + (p.f ? ' <span class="sub">' + esc(p.f) + "</span>" : "") + "</td><td>" + esc(cellsTxt(p.y)) + "</td><td>" + esc(fmt(p.x)) + "</td></tr>"; }).join("") + "</tbody></table>";
+    var t = '<table class="corrt"><thead><tr><th>Date</th><th>Cells/cm\u00b2</th><th>Confluence (%)</th></tr></thead><tbody>' + pts.map(function (p) { return "<tr><td>" + esc(p.d) + (p.f ? ' <span class="sub">' + esc(p.f) + "</span>" : "") + "</td><td>" + esc(cellsTxt(p.y)) + '<br><span class="sub">' + esc(cellsTxt(p.tc)) + " \u00f7 " + esc(fmt(p.a)) + " cm\u00b2</span></td><td>" + esc(fmt(p.x)) + "</td></tr>"; }).join("") + "</tbody></table>";
     $("corrBox").innerHTML = h + '<div class="corrwrap">' + g + t + "</div>";
   }
   document.addEventListener("change", function (ev) { if (ev.target && ev.target.id === "corrScope") { state.corrAll = ev.target.value === "all"; renderEntries(); } });
