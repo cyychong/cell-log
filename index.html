@@ -651,12 +651,28 @@ window.CCL_GOOGLE_CLIENT_ID = "";
       if (!box) { box = document.createElement("div"); box.id = "bkChoose"; box.style.cssText = "display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px"; this.parentNode.parentNode.insertBefore(box, this.parentNode.nextSibling); }
       if (box.innerHTML && !box.hidden) { box.hidden = true; return; }
       var share = canShareFiles();
+      // Phones only open the share menu straight from a tap, so the backup file is built now, before Share is tapped.
+      var pre = null;
+      if (share) { var nm = stampName(), bl = backupBlob(); pre = { name: nm, blob: bl, file: shareable(nm, bl, "application/json") || shareable(nm.replace(/\.json$/, ".txt"), bl, "text/plain") }; }
       box.innerHTML = '<b>Where should the backup go?</b> <button type="button" class="small primary" data-bk="save">Save to this device</button>' +
         (share ? ' <button type="button" class="small primary" data-bk="share">Share\u2026 (email, Google Drive, AirDrop, Messages)</button>' : "") +
         ' <button type="button" class="small" data-bk="cancel">Cancel</button>' +
         (share ? "" : '<span class="sub" style="flex-basis:100%">This browser cannot hand files to email or Google Drive directly. Save it to this device, then attach it to an email or drag it into Google Drive.</span>');
       box.hidden = false;
-      box.onclick = function (ev) { var b = ev.target.closest("button"); if (!b) return; box.hidden = true; if (b.dataset.bk !== "cancel") saveBackupFile(msg, b.dataset.bk); };
+      box.onclick = function (ev) {
+        var b = ev.target.closest("button"); if (!b) return;
+        if (b.dataset.bk === "share" && pre && pre.file) {
+          // the very first thing the tap does is open the share menu (only the file, no title: some phones reject both together)
+          navigator.share({ files: [pre.file] }).then(function () {
+            markBackup(); msg("Backup sent. If you picked Mail it is attached to the email; if you picked Drive (or Save to Files, then Google Drive), it is in your Google Drive.");
+          }, function (e) {
+            if (e && e.name === "AbortError") msg("Backup not shared.");
+            else msg("Couldn't open the share menu" + (e && (e.name || e.message) ? " (" + [e.name, e.message].filter(Boolean).join(": ") + ")" : "") + ". Use Save to this device instead.");
+          });
+          box.hidden = true; return;
+        }
+        box.hidden = true; if (b.dataset.bk !== "cancel") saveBackupFile(msg, b.dataset.bk);
+      };
     };
     document.getElementById("bkImport").onclick = function () { document.getElementById("bkFile").click(); };
     document.getElementById("bkFile").onchange = function () {
