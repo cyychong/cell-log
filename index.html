@@ -498,6 +498,9 @@ window.CCL_GOOGLE_CLIENT_ID = "";
 
 
   // ---------- backups: the phone's share menu, Google Drive, and a reminder ----------
+  // The same backup without the photos and attached files inside it (much smaller): every entry and setting, photo names kept.
+  function backupBlobLite() { return new Blob([JSON.stringify({ app: "cell-culture-log", version: 1, noPhotos: true, docs: mem }, function (k, v) { return typeof v === "string" && v.slice(0, 5) === "data:" ? "" : v; })], { type: "application/json" }); }
+  function mb(n) { return n >= 1e6 ? (n / 1e6).toFixed(1) + " MB" : Math.max(1, Math.round(n / 1e3)) + " KB"; }
   function backupBlob() { return new Blob([JSON.stringify({ app: "cell-culture-log", version: 1, docs: mem })], { type: "application/json" }); }
   function stampName() { var d = new Date(), iso = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString(); return "cell-culture-backup-" + iso.slice(0, 10) + "_" + iso.slice(11, 16).replace(":", "") + ".json"; }
   function hasEntries() { return Object.keys(mem).some(function (k) { return k.indexOf("entries/") === 0; }); }
@@ -539,7 +542,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
   }
   function restoreFrom(j, msg) {
     if (!j || j.app !== "cell-culture-log" || !j.docs) { msg("That file is not a backup from this log."); return; }
-    if (!confirm("Replace everything saved in this browser with this backup?")) return;
+    if (!confirm("Replace everything saved in this browser with this backup?" + (j.noPhotos ? "\n\nThis backup was saved without photos, so the log will have no photos after restoring." : ""))) return;
     var tx = idb.transaction(["docs"], "readwrite"), os = tx.objectStore("docs"); os.clear();
     Object.keys(j.docs).forEach(function (k) { os.put(j.docs[k], k); });
     tx.oncomplete = function () { location.reload(); };
@@ -653,21 +656,26 @@ window.CCL_GOOGLE_CLIENT_ID = "";
       var share = canShareFiles();
       // Phones only open the share menu straight from a tap, so the backup file is built now, before Share is tapped.
       var pre = null;
-      if (share) { var nm = stampName(), bl = backupBlob(); pre = { name: nm, blob: bl, file: shareable(nm, bl, "application/json") || shareable(nm.replace(/\.json$/, ".txt"), bl, "text/plain") }; }
-      box.innerHTML = '<b>Where should the backup go?</b> <button type="button" class="small primary" data-bk="save">Save to this device</button>' +
+      var nm = stampName(), bl = backupBlob(), lite = null;
+      if (share) pre = { name: nm, blob: bl, file: shareable(nm, bl, "application/json") || shareable(nm.replace(/\.json$/, ".txt"), bl, "text/plain") };
+      // a large backup (photos inside) can be refused by the phone's share menu, so a smaller one without photos is offered too
+      if (share && bl.size > 4e6) { var lb = backupBlobLite(), ln = nm.replace(/\.json$/, "_no-photos.json"); lite = { blob: lb, file: shareable(ln, lb, "application/json") || shareable(ln.replace(/\.json$/, ".txt"), lb, "text/plain") }; }
+      box.innerHTML = '<b>Where should the backup go?</b> <span class="sub">Backup size: ' + mb(bl.size) + '</span> <button type="button" class="small primary" data-bk="save">Save to this device</button>' +
         (share ? ' <button type="button" class="small primary" data-bk="share">Share\u2026 (email, Google Drive, AirDrop, Messages)</button>' : "") +
+        (lite && lite.file ? ' <button type="button" class="small" data-bk="sharelite">Share without photos (' + mb(lite.blob.size) + ')</button><span class="sub" style="flex-basis:100%">Large backups can be refused by the share menu. The smaller one has every entry and setting, but not the photos; they stay on this phone.</span>' : "") +
         ' <button type="button" class="small" data-bk="cancel">Cancel</button>' +
         (share ? "" : '<span class="sub" style="flex-basis:100%">This browser cannot hand files to email or Google Drive directly. Save it to this device, then attach it to an email or drag it into Google Drive.</span>');
       box.hidden = false;
       box.onclick = function (ev) {
         var b = ev.target.closest("button"); if (!b) return;
-        if (b.dataset.bk === "share" && pre && pre.file) {
+        var chosen = b.dataset.bk === "share" && pre && pre.file ? pre : b.dataset.bk === "sharelite" && lite && lite.file ? lite : null;
+        if (chosen) {
           // the very first thing the tap does is open the share menu (only the file, no title: some phones reject both together)
-          navigator.share({ files: [pre.file] }).then(function () {
+          navigator.share({ files: [chosen.file] }).then(function () {
             markBackup(); msg("Backup sent. If you picked Mail it is attached to the email; if you picked Drive (or Save to Files, then Google Drive), it is in your Google Drive.");
           }, function (e) {
             if (e && e.name === "AbortError") msg("Backup not shared.");
-            else msg("Couldn't open the share menu" + (e && (e.name || e.message) ? " (" + [e.name, e.message].filter(Boolean).join(": ") + ")" : "") + ". Use Save to this device instead.");
+            else msg("Couldn't open the share menu" + (e && (e.name || e.message) ? " (" + [e.name, e.message].filter(Boolean).join(": ") + ")" : "") + ". The backup was " + mb(chosen.blob.size) + "." + (lite && chosen !== lite ? " Try Share without photos, or use Save to this device instead." : " Use Save to this device instead."));
           });
           box.hidden = true; return;
         }
