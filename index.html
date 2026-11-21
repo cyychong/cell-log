@@ -5,8 +5,8 @@
 window.CCL_READER_URL = "";
 /* To turn on Google Drive backups, paste the OAuth client ID from Google Cloud between the quotes on the next line (it is public, not a secret). */
 window.CCL_GOOGLE_CLIENT_ID = "";
-window.CCL_UPDATED = "2026-11-21 18:15";
-window.CCL_NEW = "Update banner: highlighted after each update; backup and sharing back at the bottom.";
+window.CCL_UPDATED = "2026-11-21 18:27";
+window.CCL_NEW = "Update banner now also shows on devices that used the page before.";
 </script>
 <script>
 (function () {
@@ -3344,7 +3344,10 @@ window.CCL_NEW = "Update banner: highlighted after each update; backup and shari
     var seen = null; try { seen = localStorage.getItem("ccl-seenUpdate"); } catch (e) {}
     var txt = "Last updated " + window.CCL_UPDATED + (window.CCL_NEW ? " \u00b7 New: " + window.CCL_NEW : "");
     var fresh = seen !== window.CCL_UPDATED;
-    if (seen == null) { try { localStorage.setItem("ccl-seenUpdate", window.CCL_UPDATED); } catch (e) {} fresh = false; } // first time on this device: nothing to announce
+    if (seen == null) { // never stored yet: a new device, or someone who used the page before this line existed
+      var used = false; try { used = ["ccl-tab", "ccl-view", "ccl-wk"].some(function (k) { return localStorage.getItem(k) != null; }); } catch (e) {}
+      if (!used) { try { localStorage.setItem("ccl-seenUpdate", window.CCL_UPDATED); } catch (e) {} fresh = false; } // brand-new device: nothing to announce
+    }
     if (fresh) {
       $("updLine").className = "updnew"; $("updLine").innerHTML = '<span class="updbadge">\u2728 Updated</span> <span>' + esc(txt) + '</span> <button type="button" class="small" id="updOk">Got it</button>';
       $("updOk").onclick = function () { try { localStorage.setItem("ccl-seenUpdate", window.CCL_UPDATED); } catch (e) {} $("updLine").className = "sub"; $("updLine").textContent = txt; };
