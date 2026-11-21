@@ -894,6 +894,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
   @media (prefers-color-scheme: dark) { .calc.pre .rem { color: #ffb74d; } }
   .mphotos { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
   .mphoto { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; font-size: 11px; }
+  .mphoto .edesc { width: 110px; font-size: 11px; padding: 2px 4px; }
   .mphoto img { width: 72px; height: 72px; object-fit: cover; border-radius: 6px; border: 1px solid var(--line); }
   .stept { border-collapse: collapse; margin: 6px 0 4px; font-size: 12.5px; width: 100%; }
   .stept th { text-align: left; font-size: 11.5px; color: var(--muted, #888); padding: 3px 6px 3px 0; border-bottom: 1px solid var(--line); vertical-align: bottom; }
@@ -1139,8 +1140,9 @@ window.CCL_GOOGLE_CLIENT_ID = "";
           <label>Mycoplasma check
             <select id="f_myco"><option value="">Choose</option><option>Negative</option><option>Positive</option><option>Not done</option></select>
           </label>
-          <label id="photoField">Photo<input id="f_photo" type="file" accept="image/*"></label>
-          <label id="photoDescField">What the photo shows<input id="f_photoDesc" placeholder="e.g. confluence"></label>
+          <label id="photoDescField">What the next photo shows<input id="f_photoDesc" placeholder="e.g. confluence"></label>
+          <label id="photoField">Add a photo<input id="f_photo" type="file" accept="image/*"></label>
+          <div class="full mphotos" id="ePhotoList"></div>
         </div>
         <div class="actions">
           <button type="submit" class="primary" id="saveBtn">Save entry</button>
@@ -1551,7 +1553,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     var h = $("thawHint"); if (!h) return;
     var act = $("f_action").value, v = visFor(act), x = curExp(), isThaw = act === "Thaw", thaw = !state.editing && isThaw;
     Object.keys(GEL).forEach(function (g) { GEL[g].forEach(function (el) { el.hidden = !v[g]; }); });
-    if (state.assets) { $("photoField").hidden = act === "Change media"; $("photoDescField").hidden = act === "Change media"; }
+    if (state.assets) { $("photoField").hidden = act === "Change media"; $("photoDescField").hidden = act === "Change media"; $("ePhotoList").hidden = act === "Change media"; }
     $("vialScan").hidden = !(isThaw && state.sample);
     $("passLabel").textContent = act === "Passage" || act === "Thaw" ? "Passage to" : "Passage #";
     h.textContent = !state.editing && !(x && !x.end) ? (x ? "This experiment has ended. Reopen it or start a new one to add entries." : "No experiment yet. Press Start new experiment above first.") : thaw ? "This goes into " + (x.name || "the current experiment") + ". The vial details are kept with that experiment." : "";
@@ -2374,7 +2376,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     docs["lines/" + l._id] = plain(l, ["_id"]);
     state.experiments.filter(function (x) { return x.line === name; }).forEach(function (x) { docs["experiments/" + x.id] = plain(x, ["id"]); });
     // photos and attached files stay in Claude: their links do not open outside it
-    state.entries.filter(function (e) { return e.line === name; }).forEach(function (e) { docs["entries/" + e.id] = plain(e, ["id", "photoUrl"]); });
+    state.entries.filter(function (e) { return e.line === name; }).forEach(function (e) { docs["entries/" + e.id] = plain(e, ["id", "photoUrl", "photos"]); });
     state.media.forEach(function (m) { docs["media/" + m.id] = plain(m, ["photos"]); });
     state.protocols.forEach(function (p) { docs["protocols/" + p.id] = plain(p, ["id", "files"]); });
     state.actions.forEach(function (a) { docs["actions/" + a.id] = plain(a, ["id"]); });
@@ -2582,7 +2584,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
         put(m[0], v, unsure.indexOf(m[1]) >= 0); got.push(v);
       });
       try {
-        if (!WEB && state.assets && window.DataTransfer) { var vb = tiledV ? await downscale(files[0], 1800) : blobs[0]; var dt = new DataTransfer(); dt.items.add(new File([vb], "vial.jpg", { type: "image/jpeg" })); $("f_photo").files = dt.files; if (!$("f_photoDesc").value) $("f_photoDesc").value = "vial"; }
+        if (!WEB && state.assets && window.DataTransfer) { var vb = tiledV ? await downscale(files[0], 1800) : blobs[0]; addEntryPhoto(new File([vb], "vial.jpg", { type: "image/jpeg" }), "vial label"); }
       } catch (e2) {}
       var norm = function (x) { return String(x || "").toLowerCase().replace(/[^a-z0-9]/g, ""); }, cl = norm(r.cellLine), tb = norm(state.tab);
       var mismatch = cl && tb && cl.indexOf(tb) < 0 && tb.indexOf(cl) < 0;
@@ -2640,10 +2642,30 @@ window.CCL_GOOGLE_CLIENT_ID = "";
       if (!state.editing) applyTemplate();
     } catch (e) { $("tplMsg").textContent = "Could not save: " + (e && e.code ? e.code + " - " : "") + (e && e.message ? e.message : "try again"); }
   };
+  // An entry keeps several photos (e.g. the trypsin bottle and the cells). Older entries kept one in photoUrl/photoName.
+  function entryPhotos(e) { return Array.isArray(e && e.photos) && e.photos.length ? e.photos : e && e.photoUrl ? [{ url: e.photoUrl, name: e.photoName || "photo", desc: e.photoDesc || "" }] : []; }
+  state.eKeep = []; state.ePend = [];
+  function addEntryPhoto(file, desc) { state.ePend.push({ file: file, desc: String(desc || "").trim() || "photo" }); renderEPhotos(); }
+  function descIn(w, i, v) { return '<input class="edesc" data-edw="' + w + '" data-edi="' + i + '" value="' + esc(v) + '" aria-label="What this photo shows">'; }
+  function renderEPhotos() {
+    $("ePhotoList").innerHTML = state.eKeep.map(function (p, i) { return '<span class="mphoto"><img src="' + esc(p.url) + '" alt="' + esc(p.name) + '">' + descIn("k", i, p.desc || p.name) + ' <button type="button" class="small" data-eprm="' + i + '">Remove</button></span>'; }).join("") +
+      state.ePend.map(function (p, i) { if (!p.url) p.url = URL.createObjectURL(p.file); return '<span class="mphoto"><img src="' + esc(p.url) + '" alt="New photo">' + descIn("p", i, p.desc) + ' <button type="button" class="small" data-eppr="' + i + '">Remove</button></span>'; }).join("");
+  }
+  $("ePhotoList").addEventListener("click", function (ev) {
+    var b = ev.target.closest("button"); if (!b) return;
+    if (b.dataset.eprm != null) state.eKeep.splice(Number(b.dataset.eprm), 1); else if (b.dataset.eppr != null) state.ePend.splice(Number(b.dataset.eppr), 1);
+    renderEPhotos();
+  });
+  $("ePhotoList").addEventListener("input", function (ev) { var t = ev.target; if (!t.dataset || t.dataset.edw == null) return; var l = t.dataset.edw === "k" ? state.eKeep : state.ePend, it = l[Number(t.dataset.edi)]; if (it) it.desc = t.value; });
+  // Picking a photo adds it to the list (with what it shows) instead of replacing the last one.
+  $("f_photo").addEventListener("change", function () {
+    var f = this.files && this.files[0]; if (!f) return;
+    addEntryPhoto(f, $("f_photoDesc").value); this.value = ""; $("f_photoDesc").value = "";
+  });
   function resetEntryForm() {
     F.forEach(function (k) { $("f_" + k).value = ""; }); $("f_flag").checked = false;
     $("f_date").value = today();
-    $("f_photo").value = ""; $("f_photoDesc").value = "";
+    $("f_photo").value = ""; $("f_photoDesc").value = ""; state.eKeep = []; state.ePend = []; renderEPhotos();
     state.pf = {}; state.pfUsed = false; state.editing = null; applyTemplate(); renderCustomFields(null, null); state.vialPassage = ""; $("dissScanOut").textContent = ""; ["dissType", "dissExp", "dissBrand", "dissCat", "dissConc"].forEach(function (k) { $("f_" + k).classList.remove("warn"); });
     $("formTitle").textContent = "New entry"; $("saveBtn").textContent = "Save entry"; $("cancelEdit").hidden = true;
     $("formLine").textContent = isLine(state.tab) ? state.tab : "";
@@ -2754,15 +2776,19 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     if ($("f_action").value === "Change media") { doc.passage = ""; doc.flasks = []; doc.flask = ""; doc.nflasks = 0; doc.coating = ""; doc.coatingExp = ""; doc.conf = null; doc.myco = ""; ["split", "rinse", "dissType", "dissBrand", "dissCat", "dissExp", "dissConc", "cenSpeed"].forEach(function (k) { doc[k] = ""; }); ["dissVol", "dissTemp", "dissTime", "c1", "c2", "avg", "vol", "seeded", "cenTime"].forEach(function (k) { doc[k] = null; }); }
     blankHidden(doc, visFor(doc.action));
     if (prev) { if (prev.exp) doc.exp = prev.exp; } else if (!startNew) doc.exp = xp.id;
-    if (prev && prev.photoUrl) { doc.photoUrl = prev.photoUrl; doc.photoName = prev.photoName || ""; }
     try {
-      var file = $("f_photo").files[0];
-      if (file && state.assets && $("f_action").value !== "Change media") {
-        var ext = (file.name.split(".").pop() || "jpg").toLowerCase();
-        var nm = [doc.date, slug(doc.line), doc.passage ? "p" + slug(doc.passage) : "", slug($("f_photoDesc").value) || "photo"].filter(Boolean).join("_") + "." + ext;
-        var up = await state.assets.upload(new File([file], nm, { type: file.type }));
-        doc.photoUrl = up.url; doc.photoName = nm;
+      var photos = state.editing ? state.eKeep.slice() : [];
+      if (state.ePend.length && state.assets && $("f_action").value !== "Change media") {
+        for (var pi = 0; pi < state.ePend.length; pi++) {
+          var pp = state.ePend[pi], ext = (String(pp.file.name || "").split(".").pop() || "jpg").toLowerCase(); if (!/^(jpe?g|png|webp|heic|gif)$/.test(ext)) ext = "jpg";
+          var base = [doc.date, slug(doc.line), doc.passage ? "p" + slug(doc.passage) : "", slug(pp.desc) || "photo"].filter(Boolean).join("_"), nm = base + "." + ext, k = 2;
+          while (photos.some(function (x) { return x.name === nm; })) nm = base + "_" + (k++) + "." + ext;
+          var up = await state.assets.upload(new File([pp.file], nm, { type: pp.file.type || "image/jpeg" }));
+          photos.push({ url: up.url, name: nm, desc: pp.desc });
+        }
       }
+      doc.photos = photos;
+      if (photos.length) { doc.photoUrl = photos[0].url; doc.photoName = photos[0].name; } else { doc.photoUrl = ""; doc.photoName = ""; }
       if (startNew) {
         var xr = state.db.collection("experiments").doc();
         await xr.set({ line: doc.line, name: "Exp " + (lineExps(doc.line).length + 1), start: doc.date || today(), end: "", endReason: "", notes: "", frozenDate: doc.frozenDate, freezeMedia: doc.freezeMedia, freezeMediaExp: doc.freezeMediaExp, frozenBy: doc.frozenBy, vialId: doc.vialId, createdAt: Date.now() });
@@ -2817,7 +2843,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
       h += "<tr" + (e.flag ? ' class="flagged"' : "") + "><td>" + esc(e.date) + "</td><td>" + esc(e.passage) + "</td><td>" + esc(e.action) + "</td><td>" + esc(e.split) + "</td><td>" + [e.frozenDate, e.freezeMedia && e.freezeMedia + (e.freezeMediaExp ? " (" + expTxt(e.freezeMediaExp) + ")" : ""), e.frozenBy && "by " + e.frozenBy, e.vialId && "vial " + e.vialId, num(e.thawMediaVol) != null ? "media added " + fmt(num(e.thawMediaVol)) + " mL" : ""].filter(Boolean).map(esc).join("<br>") + "</td><td>" + esc(flTxt) + "</td><td>" + esc(e.coating) + (e.coatingExp ? "<small>" + esc(expTxt(e.coatingExp)) + "</small>" : "") + "</td><td>" + esc(e.rinse) + "</td><td>" + dis + "</td><td>" + [e.cenSpeed, num(e.cenTime) != null ? fmt(num(e.cenTime)) + " min" : ""].filter(Boolean).map(esc).join("<br>") + "</td><td>" + (e.custom || []).map(function (c) { return "<div>" + esc(c.label) + ": " + esc(c.value) + (c.unit ? " " + esc(c.unit) : "") + "</div>"; }).join("") + "</td>" +
         "<td>" + esc(fmt(num(e.c1))) + "</td><td>" + esc(fmt(num(e.c2))) + "</td>" + cell(num(e.avg), c.avg) + "<td>" + esc(fmt(num(e.vol))) + "</td>" + cell(num(e.seeded), c.seeded) + '<td class="calc">' + workHtml(e) + "</td>" +
         "<td>" + esc(e.media) + (num(e.mediaVol) != null ? "<small>" + esc(fmt(num(e.mediaVol))) + " mL added</small>" : "") + "</td><td>" + esc(fmt(num(e.conf))) + "</td><td>" + esc(e.myco) + "</td><td>" + esc(e.protocolName) + '</td><td class="notes">' + (e.flag ? '<span class="flagtag">\u26a0 Flagged</span>' : "") + esc(e.notes) + "</td>" +
-        "<td>" + (e.photoUrl ? '<a href="' + esc(e.photoUrl) + '" target="_blank" rel="noopener" title="' + esc(e.photoName) + '"><img src="' + esc(e.photoUrl) + '" alt="' + esc(e.photoName) + '"></a>' : "") + "</td>" +
+        "<td>" + entryPhotos(e).map(function (p) { return '<a href="' + esc(p.url) + '" target="_blank" rel="noopener" title="' + esc(p.desc || p.name) + '"><img src="' + esc(p.url) + '" alt="' + esc(p.desc || p.name) + '"></a>'; }).join("") + "</td>" +
         '<td><button class="small" data-edit="' + esc(e.id) + '">Edit</button> <button class="small" data-del="' + esc(e.id) + '">Delete</button></td></tr>';
     });
     return h + "</tbody></table>";
@@ -2827,7 +2853,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     var b = ev.target.closest("button"); if (!b) return;
     if (b.dataset.edit) {
       var e = state.entries.filter(function (x) { return x.id === b.dataset.edit; })[0]; if (!e) return;
-      state.editing = e.id;
+      state.editing = e.id; state.eKeep = entryPhotos(e).map(function (p) { return Object.assign({}, p); }); state.ePend = []; renderEPhotos();
       F.forEach(function (k) { var v = e[k]; $("f_" + k).value = v == null ? "" : v; }); $("f_flag").checked = !!e.flag;
       state.pf = {}; state.pfUsed = (e.perFlask || []).length > 0; var pfc = {}; (e.perFlask || []).forEach(function (f) { for (var q = 0; q < (f.n || 1); q++) { pfc[f.type] = pfc[f.type] || 0; state.pf[f.type + "#" + pfc[f.type]++] = f.cells; } }); entryFl.set(flasksOf(e), true); renderPerFlask(); ensureProtocolOption(e.protocol, e.protocolName); renderCustomFor(e); updateEntryVisibility();
       $("formTitle").textContent = "Edit entry"; $("saveBtn").textContent = "Save changes"; $("cancelEdit").hidden = false;
@@ -2985,9 +3011,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
         var bl = []; for (var i = 0; i < files.length; i++) { try { bl.push(await downscale(files[i], 1800)); } catch (e) { bl.push(files[i]); } }
         bl.forEach(function (b) { state.pending.push({ blob: b, kind: "photo" }); }); renderMPhotos();
       } else {
-        var dt = new DataTransfer(); dt.items.add(files[0]); $("f_photo").files = dt.files;
-        if (!$("f_photoDesc").value.trim()) $("f_photoDesc").value = t.id === "vialScanFile" ? "vial label" : "dissociation reagent bottle";
-        $("f_photo").dispatchEvent(new Event("change", { bubbles: true }));
+        addEntryPhoto(files[0], t.id === "vialScanFile" ? "vial label" : "dissociation reagent bottle");
       }
     }, true);
   })();
@@ -3376,7 +3400,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     zip.file("media_information.xlsx", await mw.xlsx.writeBuffer());
     var mJobs = [];
     batches.forEach(function (m) { (Array.isArray(m.photos) ? m.photos : []).forEach(function (p) { mJobs.push({ url: p.url, path: "media_photos/" + safeName(m.id) + "/" + safeName(p.name) }); }); });
-    var lJobs = ents.filter(function (e) { return e.photoUrl; }).map(function (e) { return { url: e.photoUrl, path: "log_photos/" + safeName(e.photoName || (e.date + "_photo")) }; });
+    var lJobs = []; ents.forEach(function (e) { entryPhotos(e).forEach(function (p) { lJobs.push({ url: p.url, path: "log_photos/" + safeName(p.name || (e.date + "_photo")) }); }); });
 
     // Sharing travels inside the zip: the owner's zip lets someone on the web page carry on logging this cell line, and theirs carries their new entries back.
     var shareNote = "";
@@ -3442,7 +3466,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
           var r = ws.addRow([e.date || null, e.passage || null, e.action || null, e.split || null, fl.length ? flaskTotal(fl) : null, fl.length ? flaskText(fl) : null, e.coating || null, e.coatingExp || null,
             e.rinse || null, e.dissType || null, e.dissBrand || null, e.dissCat || null, e.dissExp || null, e.dissConc || null, num(e.dissVol), num(e.dissTemp), num(e.dissTime),
             num(e.c1), num(e.c2), num(e.avg), c.avg ? c.avg.expected : null, num(e.vol), num(e.seeded), c.seeded ? c.seeded.expected : null, w || null,
-            e.media || null, num(e.conf), e.myco || null, (e.flag ? "\u26a0 FLAGGED" + (e.notes ? ": " : "") : "") + (e.notes || "") || null, e.photoName || null, e.frozenDate || null, e.freezeMedia || null, e.frozenBy || null, e.freezeMediaExp || null, num(e.thawMediaVol), e.cenSpeed || null, num(e.cenTime), e.vialId || null, num(e.mediaVol), e.protocolName || null].concat(clabels.map(function (L) { var m = (e.custom || []).filter(function (c) { return c.label + (c.unit ? " (" + c.unit + ")" : "") === L; })[0]; return m ? (m.type === "number" && num(m.value) != null ? num(m.value) : m.value) : null; })));
+            e.media || null, num(e.conf), e.myco || null, (e.flag ? "\u26a0 FLAGGED" + (e.notes ? ": " : "") : "") + (e.notes || "") || null, (entryPhotos(e).map(function (p) { return p.name; }).join("; ") || null), e.frozenDate || null, e.freezeMedia || null, e.frozenBy || null, e.freezeMediaExp || null, num(e.thawMediaVol), e.cenSpeed || null, num(e.cenTime), e.vialId || null, num(e.mediaVol), e.protocolName || null].concat(clabels.map(function (L) { var m = (e.custom || []).filter(function (c) { return c.label + (c.unit ? " (" + c.unit + ")" : "") === L; })[0]; return m ? (m.type === "number" && num(m.value) != null ? num(m.value) : m.value) : null; })));
           if (c.avg) r.getCell(cols.indexOf("Average count (yours)") + 1).fill = c.avg.ok ? GREEN : RED;
           if (c.seeded) r.getCell(cols.indexOf("Cells seeded (yours)") + 1).fill = c.seeded.ok ? GREEN : RED;
           r.getCell(cols.indexOf("Working") + 1).alignment = { wrapText: true, vertical: "top" };
@@ -3464,7 +3488,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     if ($("liveConfirm").value.trim().toUpperCase() !== "DELETE") { msg.textContent = "Type DELETE in the box first."; return; }
     var ents = state.entries.slice(), meds = state.media.slice(), exps = state.experiments.slice(), ids = {};
     function grab(u) { var m = String(u || "").match(/[0-9a-f]{32}/i); if (m) ids[m[0].toLowerCase()] = 1; }
-    ents.forEach(function (e) { grab(e.photoUrl); });
+    ents.forEach(function (e) { grab(e.photoUrl); entryPhotos(e).forEach(function (p) { grab(p.url); }); });
     meds.forEach(function (m) { (Array.isArray(m.photos) ? m.photos : []).forEach(function (p) { grab(p.url); }); });
     $("liveBtn").disabled = true; msg.textContent = "Deleting...";
     try {
@@ -3490,7 +3514,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
       try { var lim = await got[3].limits(); if (lim && lim.images) { state.sample = got[3]; state.maxImages = lim.images.maxCount || 4; $("scanBox").hidden = false; $("dissScan").hidden = false; document.querySelectorAll(".sampleonly").forEach(function (el) { el.hidden = false; }); updateThawHint(); renderSupp(); if (state.tab === PROTO) renderProtocols(); } } catch (e) {}
     }
     if (!state.db) { setStatus("Saved data is not available. Open this page in claude.ai while signed in, or use the stand-alone web page version."); return; }
-    if (!state.assets) { $("photoField").hidden = true; $("photoDescField").hidden = true; }
+    if (!state.assets) { $("photoField").hidden = true; $("photoDescField").hidden = true; $("ePhotoList").hidden = true; }
     if (state.downloads) $("exportBtn").hidden = false;
     if (!isWebPage()) $("reviewBtn").hidden = false;
     setStatus("Loading...");
