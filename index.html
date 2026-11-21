@@ -516,16 +516,24 @@ window.CCL_GOOGLE_CLIENT_ID = "";
   // On a phone, the share menu lets people put the file straight into Google Drive (or Files, email...). Elsewhere it downloads.
   // how: "save" downloads to this device; "share" opens the system share menu (Mail, Google Drive, AirDrop, Messages...);
   // left out (the backup reminder bar), phones share and computers download.
-  function canShareFiles() { try { var f = new File(["{}"], "t.json", { type: "application/json" }); return !!(navigator.share && navigator.canShare && navigator.canShare({ files: [f] })); } catch (e) { return false; } }
+  // Some phones (Android Chrome) will not share .json files but do share .txt, so the backup is offered as .txt there.
+  function shareable(name, data, type) { try { var f = new File([data], name, { type: type }); return navigator.share && navigator.canShare && navigator.canShare({ files: [f] }) ? f : null; } catch (e) { return null; } }
+  function canShareFiles() { return !!(shareable("t.json", "{}", "application/json") || shareable("t.txt", "{}", "text/plain")); }
   function saveBackupFile(msg, how) {
     var name = stampName(), blob = backupBlob(), file = null;
     try { file = new File([blob], name, { type: "application/json" }); } catch (e) {}
     var dl = function () { downloads.save({ filename: name, data: blob }); markBackup(); msg("Backup file saved to this device (" + name + ")."); };
     if (how === "save") { dl(); return Promise.resolve(); }
-    if (file && (how === "share" || isPhone()) && navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-      return navigator.share({ files: [file], title: "Cell culture log backup" }).then(function () {
+    var sfile = (how === "share" || isPhone()) ? (shareable(name, blob, "application/json") || shareable(name.replace(/\.json$/, ".txt"), blob, "text/plain")) : null;
+    if (how === "share" && !sfile) { msg("This browser can't share the backup file. Use Save to this device instead."); return Promise.resolve(); }
+    if (sfile) {
+      return navigator.share({ files: [sfile], title: "Cell culture log backup" }).then(function () {
         markBackup(); msg("Backup sent. If you picked Mail it is attached to the email; if you picked Drive (or Save to Files, then Google Drive), it is in your Google Drive.");
-      }, function (e) { if (e && e.name === "AbortError") msg("Backup not saved."); else dl(); });
+      }, function (e) {
+        if (e && e.name === "AbortError") msg("Backup not shared.");
+        else if (how === "share") msg("Couldn't open the share menu" + (e && (e.name || e.message) ? " (" + [e.name, e.message].filter(Boolean).join(": ") + ")" : "") + ". Use Save to this device instead.");
+        else dl();
+      });
     }
     dl(); return Promise.resolve();
   }
@@ -623,11 +631,11 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     var bar = document.createElement("div");
     bar.style.cssText = "max-width:1200px;margin:24px auto 16px;padding:0 16px;font:13px/1.4 system-ui,sans-serif;color:#7a8b89;display:flex;flex-direction:column;gap:8px";
     bar.innerHTML =
-      '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><span>Your log is saved in this browser on this device. To keep a copy, move it to another device, or share it with someone, save a backup file:</span><button type="button" id="bkExport" style="' + BTN + '">Export backup</button><button type="button" id="bkImport" style="' + BTN + '">Restore a backup</button><input id="bkFile" type="file" accept="application/json,.json" hidden><span id="bkMsg" role="status"></span></div>' +
+      '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><span>Your log is saved in this browser on this device. To keep a copy, move it to another device, or share it with someone, save a backup file:</span><button type="button" id="bkExport" style="' + BTN + '">Export backup</button><button type="button" id="bkImport" style="' + BTN + '">Restore a backup</button><input id="bkFile" type="file" accept="application/json,.json,text/plain,.txt" hidden><span id="bkMsg" role="status"></span></div>' +
       '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><span id="bkLast"></span><label style="display:flex;gap:6px;align-items:center">Remind me to back up<select id="bkEvery" style="font:inherit;padding:3px 6px;border-radius:6px;border:1px solid #9ab0ad;background:transparent;color:inherit"><option value="1">every day</option><option value="3">every 3 days</option><option value="7">every week</option><option value="14">every 2 weeks</option><option value="30">every month</option><option value="0">never</option></select></label></div>' +
       '<div id="gdRow" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center" hidden><span id="gdState"></span><button type="button" id="gdConnect" style="' + BTN + '">Connect Google Drive</button><button type="button" id="gdNow" style="' + BTN + '" hidden>Back up to Google Drive</button><button type="button" id="gdRestore" style="' + BTN + '" hidden>Restore from Google Drive</button><label id="gdAutoL" style="display:flex;gap:6px;align-items:center" hidden><input type="checkbox" id="gdAuto"> Back up to Drive by itself when a backup is due</label><button type="button" id="gdOff" style="' + BTN + '" hidden>Disconnect</button><span id="gdMsg" role="status"></span></div>' +
-      '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><span id="shState">Someone shared a cell line with you?</span><button type="button" id="shOpen" style="' + BTN + '">Open a share file</button><button type="button" id="shSend" style="' + BTN + '" hidden>Send my entries</button><input id="shFile" type="file" accept="application/zip,.zip,application/json,.json" hidden><span id="shMsg" role="status"></span></div>' +
-      '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><span>Someone sent you their backup file?</span><button type="button" id="bkView" style="' + BTN + '">Open a shared log (view only)</button><input id="bkViewFile" type="file" accept="application/json,.json" hidden></div>' +
+      '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><span id="shState">Someone shared a cell line with you?</span><button type="button" id="shOpen" style="' + BTN + '">Open a share file</button><button type="button" id="shSend" style="' + BTN + '" hidden>Send my entries</button><input id="shFile" type="file" accept="application/zip,.zip,application/json,.json,text/plain,.txt" hidden><span id="shMsg" role="status"></span></div>' +
+      '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><span>Someone sent you their backup file?</span><button type="button" id="bkView" style="' + BTN + '">Open a shared log (view only)</button><input id="bkViewFile" type="file" accept="application/json,.json,text/plain,.txt" hidden></div>' +
       '<div id="modeRow" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center" hidden><span>Printed bottle labels are read:</span><select id="ocrSel" style="font:inherit;padding:4px 8px;border-radius:6px;border:1px solid #9ab0ad;background:transparent;color:inherit"><option value="device">on this phone (free, printed text only, check every field)</option><option value="ai">with AI (more accurate, uses the reading service)</option></select></div>' +
       '<div id="codeRow" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center" hidden><span>Photo and protocol reading access code is saved on this device.</span><button type="button" id="codeRemove" style="' + BTN + '">Remove it</button></div>';
     document.body.appendChild(bar);
