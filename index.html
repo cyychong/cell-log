@@ -994,6 +994,12 @@ window.CCL_GOOGLE_CLIENT_ID = "";
   .srcflasks, .srcmode { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 4px 0; }
   .srcflask { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; margin: 8px 0; }
   .pfrow select { width: 100%; margin-bottom: 4px; font-size: 12px; }
+  .guide details.gsec { border-bottom: 1px solid var(--line); padding: 2px 0; }
+  .guide details.gsec > summary { font-weight: 600; font-size: 15px; padding: 10px 2px; cursor: pointer; list-style: none; }
+  .guide details.gsec > summary::-webkit-details-marker { display: none; }
+  .guide details.gsec > summary::before { content: "\25B8"; display: inline-block; width: 14px; transition: transform .15s; }
+  .guide details.gsec[open] > summary::before { transform: rotate(90deg); }
+  .guide details.gsec[open] { padding-bottom: 10px; }
   .guide h3 { margin: 18px 0 6px; font-size: 15px; } .guide ul { margin: 0; padding-left: 20px; } .guide li { margin: 4px 0; } .guide a { color: var(--accent); }
   table.guidet { width: 100%; font-size: 13px; } table.guidet th, table.guidet td { white-space: normal; padding: 6px 8px; vertical-align: top; }
   .mphotos { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
@@ -1284,7 +1290,25 @@ window.CCL_GOOGLE_CLIENT_ID = "";
   <section id="guidePanel" class="wrap guide" style="gap:16px" hidden>
     <div class="panel">
       <div class="panel-head"><h2>Guide</h2><span class="sub">A short version. The full guide is on GitHub: <a href="https://github.com/cyychong/cell-log#readme" target="_blank" rel="noopener">github.com/cyychong/cell-log</a></span></div>
-      <h3>Which file do I need?</h3>
+      <div class="actions" style="margin-top:4px"><button type="button" class="small" id="gOpenAll">Open all</button><button type="button" class="small" id="gCloseAll">Close all</button></div>
+      <details class="gsec"><summary>Opening the app</summary>
+      <ul><li>Open <a href="https://cyychong.github.io/cell-log/" target="_blank" rel="noopener">cyychong.github.io/cell-log</a> in any browser. To install it: Share → Add to Home Screen (iPhone), ⋮ → Install app (Android), File → Add to Dock (Mac Safari).</li>
+      <li>Your log is saved <b>only on this device, in this browser</b>. The installed app and the browser keep separate logs. Back up regularly (a reminder bar appears when one is due).</li>
+      <li>The app updates itself when it opens with internet. Close and reopen it (or reload) to get changes.</li></ul>
+      </details>
+      <details class="gsec"><summary>Logging an entry</summary>
+      <ul><li>Pick the cell line tab and the experiment, then the action. Defaults from the cell line and its protocol fill in; the passage number comes from your last entry.</li>
+      <li><b>Passage:</b> tick which flasks you trypsinized; pool them or count each separately. Type both counts and the volume you resuspended in to get total cells. Add the new flasks, type the cells for each, and pick where they come from: the volume to add is worked out (mL and µL).</li>
+      <li><b>Change media:</b> one box per flask from your last passage; type a volume or words (e.g. not changed).</li>
+      <li><b>Upload a photo</b> of a reagent or vial label: the photo is saved, and printed text fills in the fields (check amber fields). Expired dates are flagged. Add more photos with <b>Add a photo</b>.</li>
+      <li>Use <b>Notes</b> for anything unusual and tick <b>Flag this entry</b> to mark it.</li></ul>
+      </details>
+      <details class="gsec"><summary>Other tabs and views</summary>
+      <ul><li><b>Media &amp; lots:</b> media batches with their components, lots and bottle photos (named after the batch ID).</li>
+      <li><b>Protocols:</b> grouped by cell line in culture order. Change growth areas per protocol, note what you tested, add dated notes; edits make dated versions you can go back to.</li>
+      <li><b>Log views:</b> Month, Week, Day, Log, and <b>Cells/cm² vs confluence</b> (table, graph and correlation).</li></ul>
+      </details>
+      <details class="gsec"><summary>Which file do I need?</summary>
       <table class="guidet"><thead><tr><th>I want to…</th><th>Use</th><th>The other person (or device) uses</th></tr></thead><tbody>
         <tr><td data-label="I want to…">Keep a safe copy of my log</td><td data-label="Use"><b>Export backup</b> (bottom of the page), whole log</td><td data-label="They use">Keep the file somewhere safe (Google Drive, email)</td></tr>
         <tr><td data-label="I want to…">Move my log to a new phone or computer</td><td data-label="Use"><b>Export backup</b>, whole log</td><td data-label="They use"><b>Restore a backup</b> on the new device (replaces its log)</td></tr>
@@ -1292,20 +1316,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
         <tr><td data-label="I want to…">Work on a cell line together</td><td data-label="Use"><b>Download (zip)</b> at the top, on that experiment's tab</td><td data-label="They use"><b>Open a share file</b>, add entries, then send their own zip back</td></tr>
         <tr><td data-label="I want to…">Get spreadsheets of my entries</td><td data-label="Use"><b>Download (zip)</b>: Excel files inside</td><td data-label="They use">Open the .xlsx files</td></tr>
       </tbody></table>
-      <h3>Opening the app</h3>
-      <ul><li>Open <a href="https://cyychong.github.io/cell-log/" target="_blank" rel="noopener">cyychong.github.io/cell-log</a> in any browser. To install it: Share → Add to Home Screen (iPhone), ⋮ → Install app (Android), File → Add to Dock (Mac Safari).</li>
-      <li>Your log is saved <b>only on this device, in this browser</b>. The installed app and the browser keep separate logs. Back up regularly (a reminder bar appears when one is due).</li>
-      <li>The app updates itself when it opens with internet. Close and reopen it (or reload) to get changes.</li></ul>
-      <h3>Logging an entry</h3>
-      <ul><li>Pick the cell line tab and the experiment, then the action. Defaults from the cell line and its protocol fill in; the passage number comes from your last entry.</li>
-      <li><b>Passage:</b> tick which flasks you trypsinized; pool them or count each separately. Type both counts and the volume you resuspended in to get total cells. Add the new flasks, type the cells for each, and pick where they come from: the volume to add is worked out (mL and µL).</li>
-      <li><b>Change media:</b> one box per flask from your last passage; type a volume or words (e.g. not changed).</li>
-      <li><b>Upload a photo</b> of a reagent or vial label: the photo is saved, and printed text fills in the fields (check amber fields). Expired dates are flagged. Add more photos with <b>Add a photo</b>.</li>
-      <li>Use <b>Notes</b> for anything unusual and tick <b>Flag this entry</b> to mark it.</li></ul>
-      <h3>Other tabs and views</h3>
-      <ul><li><b>Media &amp; lots:</b> media batches with their components, lots and bottle photos (named after the batch ID).</li>
-      <li><b>Protocols:</b> grouped by cell line in culture order. Change growth areas per protocol, note what you tested, add dated notes; edits make dated versions you can go back to.</li>
-      <li><b>Log views:</b> Month, Week, Day, Log, and <b>Cells/cm² vs confluence</b> (table, graph and correlation).</li></ul>
+      </details>
       <p class="sub">The app works things out for you, but always check the numbers before you seed.</p>
     </div>
   </section>
@@ -3153,6 +3164,8 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     var t = '<table class="corrt"><thead><tr><th>Date</th><th>Cells/cm\u00b2</th><th>Confluence (%)</th></tr></thead><tbody>' + pts.map(function (p) { return "<tr><td>" + esc(p.d) + (p.f ? ' <span class="sub">' + esc(p.f) + "</span>" : "") + "</td><td>" + esc(cellsTxt(p.y)) + '<br><span class="sub">' + esc(cellsTxt(p.tc)) + " \u00f7 " + esc(fmt(p.a)) + " cm\u00b2</span></td><td>" + esc(fmt(p.x)) + "</td></tr>"; }).join("") + "</tbody></table>";
     $("corrBox").innerHTML = h + '<div class="corrwrap">' + g + t + "</div>";
   }
+  $("gOpenAll").onclick = function () { [].forEach.call(document.querySelectorAll("#guidePanel details.gsec"), function (d) { d.open = true; }); };
+  $("gCloseAll").onclick = function () { [].forEach.call(document.querySelectorAll("#guidePanel details.gsec"), function (d) { d.open = false; }); };
   document.addEventListener("change", function (ev) { if (ev.target && ev.target.id === "corrScope") { state.corrAll = ev.target.value === "all"; renderEntries(); } });
   function tableHtml(rows) {
     var h = "<table><thead><tr><th>Date</th><th>Passage #</th><th>Action</th><th>Split ratio</th><th>Thaw details</th><th>Flasks seeded</th><th>Coating</th><th>Rinse</th><th>Dissociation</th><th>Centrifuge</th><th>Protocol fields</th><th>Count 1</th><th>Count 2</th><th>Average count (yours)</th><th>Volume added (mL)</th><th>Cells seeded (yours)</th><th>Calculated by Claude</th><th>Media batch ID</th><th>Confluence (%)</th><th>Mycoplasma</th><th>Protocol</th><th>Notes</th><th>Photo</th><th></th></tr></thead><tbody>";
