@@ -659,11 +659,13 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     var bar = document.createElement("div");
     bar.style.cssText = "max-width:1200px;margin:24px auto 16px;padding:0 16px;font:13px/1.4 system-ui,sans-serif;color:#7a8b89;display:flex;flex-direction:column;gap:8px";
     bar.innerHTML =
-      '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><span>Your log is saved in this browser on this device. To keep a copy, move it to another device, or share it with someone, save a backup file:</span><button type="button" id="bkExport" style="' + BTN + '">Export backup</button><button type="button" id="bkImport" style="' + BTN + '">Restore a backup</button><input id="bkFile" type="file" accept="application/json,.json,text/plain,.txt" hidden><span id="bkMsg" role="status"></span></div>' +
+      '<div style="font-weight:600;color:inherit;margin-top:6px">Back up your log</div>' +
+      '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><span>Your log is saved only in this browser on this device. A backup file is a copy of your log (or one cell line or experiment): keep it safe, move it to another phone or computer, or send it to someone to look at. To work on an experiment together, use Download (zip) at the top instead. Not sure? See the Guide tab.</span><button type="button" id="bkExport" style="' + BTN + '">Export backup</button><button type="button" id="bkImport" style="' + BTN + '">Restore a backup</button><input id="bkFile" type="file" accept="application/json,.json,text/plain,.txt" hidden><span id="bkMsg" role="status"></span></div>' +
       '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><span id="bkLast"></span><label style="display:flex;gap:6px;align-items:center">Remind me to back up<select id="bkEvery" style="font:inherit;padding:3px 6px;border-radius:6px;border:1px solid #9ab0ad;background:transparent;color:inherit"><option value="1">every day</option><option value="3">every 3 days</option><option value="7">every week</option><option value="14">every 2 weeks</option><option value="30">every month</option><option value="0">never</option></select></label></div>' +
       '<div id="gdRow" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center" hidden><span id="gdState"></span><button type="button" id="gdConnect" style="' + BTN + '">Connect Google Drive</button><button type="button" id="gdNow" style="' + BTN + '" hidden>Back up to Google Drive</button><button type="button" id="gdRestore" style="' + BTN + '" hidden>Restore from Google Drive</button><label id="gdAutoL" style="display:flex;gap:6px;align-items:center" hidden><input type="checkbox" id="gdAuto"> Back up to Drive by itself when a backup is due</label><button type="button" id="gdOff" style="' + BTN + '" hidden>Disconnect</button><span id="gdMsg" role="status"></span></div>' +
-      '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><span id="shState">Someone shared a cell line with you?</span><button type="button" id="shOpen" style="' + BTN + '">Open a share file</button><button type="button" id="shSend" style="' + BTN + '" hidden>Send my entries</button><input id="shFile" type="file" accept="application/zip,.zip,application/json,.json,text/plain,.txt" hidden><span id="shMsg" role="status"></span></div>' +
-      '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><span>Someone sent you their backup file?</span><button type="button" id="bkView" style="' + BTN + '">Open a shared log (view only)</button><input id="bkViewFile" type="file" accept="application/json,.json,text/plain,.txt" hidden></div>' +
+      '<div style="font-weight:600;color:inherit;margin-top:6px">Received a file from someone?</div>' +
+      '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><span id="shState">A zip to work on a cell line with them (made with Download (zip))?</span><button type="button" id="shOpen" style="' + BTN + '">Open a share file</button><button type="button" id="shSend" style="' + BTN + '" hidden>Send my entries</button><input id="shFile" type="file" accept="application/zip,.zip,application/json,.json,text/plain,.txt" hidden><span id="shMsg" role="status"></span></div>' +
+      '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><span>A backup file (.json or .txt) to look at their log?</span><button type="button" id="bkView" style="' + BTN + '">Open a shared log (view only)</button><input id="bkViewFile" type="file" accept="application/json,.json,text/plain,.txt" hidden></div>' +
       '<div id="modeRow" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center" hidden><span>Printed bottle labels are read:</span><select id="ocrSel" style="font:inherit;padding:4px 8px;border-radius:6px;border:1px solid #9ab0ad;background:transparent;color:inherit"><option value="device">on this phone (free, printed text only, check every field)</option><option value="ai">with AI (more accurate, uses the reading service)</option></select></div>' +
       '<div id="codeRow" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center" hidden><span>Photo and protocol reading access code is saved on this device.</span><button type="button" id="codeRemove" style="' + BTN + '">Remove it</button></div>';
     document.body.appendChild(bar);
@@ -992,6 +994,8 @@ window.CCL_GOOGLE_CLIENT_ID = "";
   .srcflasks, .srcmode { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 4px 0; }
   .srcflask { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; margin: 8px 0; }
   .pfrow select { width: 100%; margin-bottom: 4px; font-size: 12px; }
+  .guide h3 { margin: 18px 0 6px; font-size: 15px; } .guide ul { margin: 0; padding-left: 20px; } .guide li { margin: 4px 0; } .guide a { color: var(--accent); }
+  table.guidet { width: 100%; font-size: 13px; } table.guidet th, table.guidet td { white-space: normal; padding: 6px 8px; vertical-align: top; }
   .mphotos { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
   .mphoto { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; font-size: 11px; }
   .mphoto .edesc { width: 110px; font-size: 11px; padding: 2px 4px; }
@@ -1091,6 +1095,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     td.calc, td.notes, td.photos, td:last-child { grid-column: 1 / -1; }
     td.ok, td.bad { padding: 4px 6px; border-radius: 4px; }
     td:last-child::before { content: none; }
+    .guidet td:last-child::before { content: attr(data-label); display: block; font-size: 11px; color: var(--muted); }
     /* Step tables and the cells-vs-confluence table stay real tables on phones. */
     table.corrt { display: table; } .corrt thead { display: table-header-group; } .corrt tbody { display: table-row-group; } .corrt tr { display: table-row; border: 0; padding: 0; margin: 0; }
     .corrt td, .corrt th { display: table-cell; padding: 4px 8px; border-bottom: 1px solid var(--line); font-size: 12px; white-space: nowrap; } .corrt td::before { content: none; }
@@ -1111,7 +1116,8 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
       <span id="status"></span>
       <button id="reviewBtn" hidden>Review incoming entries</button><input id="reviewFile" type="file" accept="application/zip,.zip,application/json,.json" hidden>
-      <button id="exportBtn" class="primary" hidden>Download log (zip)</button>
+      <button id="exportBtn" class="primary" hidden title="Excel sheets and photos for this experiment, plus a file someone can open (Open a share file) to add entries. Not a backup.">Download log (zip)</button>
+      <span class="sub" id="exportHint" hidden>Excel sheets + photos, and a file to work on this experiment with someone. For a backup, use Export backup at the bottom.</span>
     </div>
   </header>
 
@@ -1275,6 +1281,34 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     </div>
   </section>
 
+  <section id="guidePanel" class="wrap guide" style="gap:16px" hidden>
+    <div class="panel">
+      <div class="panel-head"><h2>Guide</h2><span class="sub">A short version. The full guide is on GitHub: <a href="https://github.com/cyychong/cell-log#readme" target="_blank" rel="noopener">github.com/cyychong/cell-log</a></span></div>
+      <h3>Which file do I need?</h3>
+      <table class="guidet"><thead><tr><th>I want to…</th><th>Use</th><th>The other person (or device) uses</th></tr></thead><tbody>
+        <tr><td data-label="I want to…">Keep a safe copy of my log</td><td data-label="Use"><b>Export backup</b> (bottom of the page), whole log</td><td data-label="They use">Keep the file somewhere safe (Google Drive, email)</td></tr>
+        <tr><td data-label="I want to…">Move my log to a new phone or computer</td><td data-label="Use"><b>Export backup</b>, whole log</td><td data-label="They use"><b>Restore a backup</b> on the new device (replaces its log)</td></tr>
+        <tr><td data-label="I want to…">Let someone look at my log, a cell line or one experiment</td><td data-label="Use"><b>Export backup</b>, pick what to include</td><td data-label="They use"><b>Open a shared log (view only)</b>; nothing changes on their side</td></tr>
+        <tr><td data-label="I want to…">Work on a cell line together</td><td data-label="Use"><b>Download (zip)</b> at the top, on that experiment's tab</td><td data-label="They use"><b>Open a share file</b>, add entries, then send their own zip back</td></tr>
+        <tr><td data-label="I want to…">Get spreadsheets of my entries</td><td data-label="Use"><b>Download (zip)</b>: Excel files inside</td><td data-label="They use">Open the .xlsx files</td></tr>
+      </tbody></table>
+      <h3>Opening the app</h3>
+      <ul><li>Open <a href="https://cyychong.github.io/cell-log/" target="_blank" rel="noopener">cyychong.github.io/cell-log</a> in any browser. To install it: Share → Add to Home Screen (iPhone), ⋮ → Install app (Android), File → Add to Dock (Mac Safari).</li>
+      <li>Your log is saved <b>only on this device, in this browser</b>. The installed app and the browser keep separate logs. Back up regularly (a reminder bar appears when one is due).</li>
+      <li>The app updates itself when it opens with internet. Close and reopen it (or reload) to get changes.</li></ul>
+      <h3>Logging an entry</h3>
+      <ul><li>Pick the cell line tab and the experiment, then the action. Defaults from the cell line and its protocol fill in; the passage number comes from your last entry.</li>
+      <li><b>Passage:</b> tick which flasks you trypsinized; pool them or count each separately. Type both counts and the volume you resuspended in to get total cells. Add the new flasks, type the cells for each, and pick where they come from: the volume to add is worked out (mL and µL).</li>
+      <li><b>Change media:</b> one box per flask from your last passage; type a volume or words (e.g. not changed).</li>
+      <li><b>Upload a photo</b> of a reagent or vial label: the photo is saved, and printed text fills in the fields (check amber fields). Expired dates are flagged. Add more photos with <b>Add a photo</b>.</li>
+      <li>Use <b>Notes</b> for anything unusual and tick <b>Flag this entry</b> to mark it.</li></ul>
+      <h3>Other tabs and views</h3>
+      <ul><li><b>Media &amp; lots:</b> media batches with their components, lots and bottle photos (named after the batch ID).</li>
+      <li><b>Protocols:</b> grouped by cell line in culture order. Change growth areas per protocol, note what you tested, add dated notes; edits make dated versions you can go back to.</li>
+      <li><b>Log views:</b> Month, Week, Day, Log, and <b>Cells/cm² vs confluence</b> (table, graph and correlation).</li></ul>
+      <p class="sub">The app works things out for you, but always check the numbers before you seed.</p>
+    </div>
+  </section>
   <section id="protoPanel" class="wrap" style="gap:16px" hidden>
     <div class="panel"><div class="panel-head"><h2>Protocols</h2><span class="sub" id="pCount"></span></div><div id="pList"></div></div>
     <div class="panel" id="pReader" hidden>
@@ -1368,8 +1402,8 @@ window.CCL_GOOGLE_CLIENT_ID = "";
 
 <script>
 (function () {
-  var MEDIA = "__media", PROTO = "__protocols";
-  function isLine(t) { return !!t && t !== MEDIA && t !== PROTO; }
+  var MEDIA = "__media", PROTO = "__protocols", GUIDE = "__guide";
+  function isLine(t) { return !!t && t !== MEDIA && t !== PROTO && t !== GUIDE; }
   var state = { db: null, assets: null, downloads: null, sample: null, lines: [], entries: [], media: [], tab: null, editing: null, editingMedia: null, pending: [], tplFor: null, openTpl: false, experiments: [], expSel: {}, expReady: false, actions: [], protocols: [], rejected: [], curCustomDef: null, view: "month", weekStart: 1, calDate: null, calFor: null, pEditing: null, pEditFiles: [], pPending: [] };
   var $ = function (id) { return document.getElementById(id); };
 
@@ -2665,6 +2699,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     }).join("");
     h += '<button class="tab" role="tab" data-tab="' + MEDIA + '" aria-selected="' + (state.tab === MEDIA) + '">Media &amp; lots</button>';
     h += '<button class="tab" role="tab" data-tab="' + PROTO + '" aria-selected="' + (state.tab === PROTO) + '">Protocols</button>';
+    if (isWebPage()) h += '<button class="tab" role="tab" data-tab="' + GUIDE + '" aria-selected="' + (state.tab === GUIDE) + '">Guide</button>';
     h += '<button class="small" id="plusLine" aria-label="Add cell line">+ Cell line</button>';
     $("tabs").innerHTML = h;
   }
@@ -3605,7 +3640,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     renderTabs();
     try { exportLabel(); } catch (e) {}
     var isMedia = state.tab === MEDIA, isProto = state.tab === PROTO, line = isLine(state.tab);
-    $("linePanel").hidden = !line; $("mediaPanel").hidden = !isMedia; $("protoPanel").hidden = !isProto;
+    $("linePanel").hidden = !line; $("mediaPanel").hidden = !isMedia; $("protoPanel").hidden = !isProto; $("guidePanel").hidden = state.tab !== GUIDE;
     if (line) renderProtocolOptions();
     $("noLines").hidden = !(state.linesReady && !state.lines.length);
     if (line) { renderExpBar(); renderEntries(); }
@@ -3643,7 +3678,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     if (x) return { exp: x, entries: state.entries.filter(function (e) { return e.exp === x.id; }), base: safeName(x.line + "_" + (x.name || "Experiment") + "_" + (x.start || "start") + "_to_" + (x.end || "ongoing")) };
     return { exp: null, entries: state.entries, base: "cell-culture-log_all_" + today() };
   }
-  function exportLabel() { var sc = exportScope(); $("exportBtn").textContent = sc.exp ? "Download " + (sc.exp.name || "experiment") + " (zip)" : "Download log (zip)"; }
+  function exportLabel() { var sc = exportScope(); $("exportBtn").textContent = sc.exp ? "Download " + (sc.exp.name || "experiment") + " to share / Excel (zip)" : "Download log as Excel (zip)"; $("exportHint").hidden = $("exportBtn").hidden || !isWebPage(); }
   // Artifacts may not download files, so photos are copied through an image on the page when a direct download is refused.
   function imgBlob(url) {
     return new Promise(function (res, rej) {
@@ -3814,7 +3849,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
     }
     if (!state.db) { setStatus("Saved data is not available. Open this page in claude.ai while signed in, or use the stand-alone web page version."); return; }
     if (!state.assets) { $("photoField").hidden = true; $("photoDescField").hidden = true; $("ePhotoList").hidden = true; }
-    if (state.downloads) $("exportBtn").hidden = false;
+    if (state.downloads) { $("exportBtn").hidden = false; try { exportLabel(); } catch (e) {} }
     if (!isWebPage()) $("reviewBtn").hidden = false;
     setStatus("Loading...");
     var slow = setTimeout(function () { setStatus("Cannot reach saved data yet."); }, 10000);
@@ -3828,7 +3863,7 @@ window.CCL_GOOGLE_CLIENT_ID = "";
       var names = state.lines.map(function (l) { return l.name; });
       state.linesReady = true;
       if (!state.tab || (isLine(state.tab) && names.indexOf(state.tab) < 0)) {
-        state.tab = (saved === MEDIA || saved === PROTO || names.indexOf(saved) >= 0) ? saved : (names[0] || MEDIA);
+        state.tab = (saved === MEDIA || saved === PROTO || saved === GUIDE || names.indexOf(saved) >= 0) ? saved : (names[0] || MEDIA);
       }
       renderAll(); if (!state.editing) { var t = $("formLine"); t.textContent = isLine(state.tab) ? state.tab : ""; }
       done("lines");

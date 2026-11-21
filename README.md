@@ -4,6 +4,18 @@ A web page for logging cell culture work: thawing, passaging, media changes and 
 
 **Open it here: https://cyychong.github.io/cell-log/**
 
+## Which file do I need?
+
+| I want to… | Use | The other person (or device) uses |
+|---|---|---|
+| Keep a safe copy of my log | **Export backup** (bottom of the page), whole log | Keep the file somewhere safe (Google Drive, email) |
+| Move my log to a new phone or computer | **Export backup**, whole log | **Restore a backup** on the new device (replaces its log) |
+| Let someone look at my log, a cell line or one experiment | **Export backup**, pick what to include | **Open a shared log (view only)** |
+| Work on a cell line together | **Download (zip)** at the top, on that experiment's tab | **Open a share file**, add entries, send their own zip back |
+| Get spreadsheets of my entries | **Download (zip)**: Excel files inside | Open the .xlsx files |
+
+The app has a **Guide** tab with a short version of this page.
+
 ## Opening it
 
 1. Open the link above in any browser, on a phone or a computer.
