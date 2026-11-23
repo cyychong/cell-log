@@ -22,7 +22,7 @@ The icon opens it like an app. It keeps working without internet.
 
 **Getting updates:** the app updates itself when it opens with internet. If an app window has been open for a while, reload it (**⌘R** on a Mac, or close and reopen the app on a phone).
 
-**What updates bring:** usually new features, new or updated protocols, or new cell lines. Your log is never changed by an update. The line under the title shows when the page was last updated and what's new; after an update it's highlighted until you tap **Got it**.
+**What updates bring:** usually new features, new or updated protocols, or new cell lines. Your log is never changed by an update. The line under the title shows when the page was last updated and what's new; after an update it's highlighted until you tap **Got it**. Every update and its date is listed on the [Updates page](UPDATES.md).
 
 ## Protocols
 
