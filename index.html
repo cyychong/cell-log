@@ -5,8 +5,8 @@
 window.CCL_READER_URL = "";
 /* To turn on Google Drive backups, paste the OAuth client ID from Google Cloud between the quotes on the next line (it is public, not a secret). */
 window.CCL_GOOGLE_CLIENT_ID = "";
-window.CCL_UPDATED = "2026-11-23 15:11";
-window.CCL_NEW = "Updates page on GitHub listing every update with its date; linked from the Guide.";
+window.CCL_UPDATED = "2026-11-23 15:19";
+window.CCL_NEW = "All experiments tab: tick experiments to download, back up or delete several at once; filter by date and sort. The Go live box is removed.";
 </script>
 <script>
 (function () {
@@ -505,13 +505,16 @@ window.CCL_NEW = "Updates page on GitHub listing every update with its date; lin
   // Media batches, protocols, custom actions and settings always come along; other cell lines' entries do not.
   function scopeDocs(scope) {
     if (!scope) return mem;
-    var out = {}, kind = scope.slice(0, scope.indexOf(":")), val = scope.slice(scope.indexOf(":") + 1), line = val, ex = null;
-    if (kind === "exp") { ex = mem["experiments/" + val]; line = ex ? ex.line : ""; }
+    var out = {}, kind = scope.slice(0, scope.indexOf(":")), val = scope.slice(scope.indexOf(":") + 1), lines = {}, ids = {};
+    // "exps:ID1,ID2" is several experiments ticked on the All experiments tab; "exp:ID" is one
+    if (kind === "exp" || kind === "exps") val.split(",").forEach(function (id) { ids[id] = 1; var ex = mem["experiments/" + id]; if (ex) lines[ex.line] = 1; });
+    else lines[val] = 1;
+    var byExp = kind === "exp" || kind === "exps";
     Object.keys(mem).forEach(function (k) {
       var d = mem[k] || {};
-      if (k.indexOf("lines/") === 0) { if (d.name === line) out[k] = d; }
-      else if (k.indexOf("experiments/") === 0) { if (kind === "exp" ? k === "experiments/" + val : d.line === line) out[k] = d; }
-      else if (k.indexOf("entries/") === 0) { if (kind === "exp" ? d.exp === val : d.line === line) out[k] = d; }
+      if (k.indexOf("lines/") === 0) { if (lines[d.name]) out[k] = d; }
+      else if (k.indexOf("experiments/") === 0) { if (byExp ? ids[k.slice(12)] : lines[d.line]) out[k] = d; }
+      else if (k.indexOf("entries/") === 0) { if (byExp ? ids[d.exp] : lines[d.line]) out[k] = d; }
       else out[k] = d;
     });
     return out;
@@ -520,7 +523,8 @@ window.CCL_NEW = "Updates page on GitHub listing every update with its date; lin
     if (!scope) return "";
     var kind = scope.slice(0, scope.indexOf(":")), val = scope.slice(scope.indexOf(":") + 1);
     if (kind === "line") return val;
-    var x = mem["experiments/" + val]; return x ? x.line + " " + (x.name || "experiment") : "experiment";
+    if (kind === "exps") { var n = val.split(",").length; if (n > 1) return n + " experiments"; }
+    var x = mem["experiments/" + val.split(",")[0]]; return x ? x.line + " " + (x.name || "experiment") : "experiment";
   }
   function backupBlobLite(scope) { return new Blob([JSON.stringify({ app: "cell-culture-log", version: 1, noPhotos: true, scope: scopeLabel(scope) || undefined, docs: scopeDocs(scope) }, function (k, v) { return typeof v === "string" && v.slice(0, 5) === "data:" ? "" : v; })], { type: "application/json" }); }
   function mb(n) { return n >= 1e6 ? (n / 1e6).toFixed(1) + " MB" : Math.max(1, Math.round(n / 1e3)) + " KB"; }
@@ -676,18 +680,28 @@ window.CCL_NEW = "Updates page on GitHub listing every update with its date; lin
     if (readerUrl()) { document.getElementById("modeRow").hidden = false; document.getElementById("ocrSel").value = ocrMode(); document.getElementById("ocrSel").onchange = function () { ls("ccl-ocr", this.value); }; }
     codeRefresh(); document.getElementById("codeRemove").onclick = function () { ls("ccl-code", null); codeRefresh(); };
     document.addEventListener("click", function () { setTimeout(codeRefresh, 1500); });
-    document.getElementById("bkExport").onclick = function () {
+    // The All experiments tab opens the same chooser under its own buttons, with the ticked experiments already chosen.
+    window.__backupScope = function (scope, host) { openBackup(scope, host); };
+    document.getElementById("bkExport").onclick = function () { openBackup(null, null); };
+    var sayBar = msg, sayBoth = function (t) { sayBar(t); var a = document.getElementById("axMsg"); if (a) a.textContent = t; };
+    function openBackup(preset, host) {
+      var msg = host ? sayBoth : sayBar;
       if (viewing) { msg("You are viewing someone else's log. Go back to your log first."); return; }
+      var ex = document.getElementById("bkExport");
       // Ask where the backup goes: this device, or the share menu (email, Google Drive, AirDrop...).
       var box = document.getElementById("bkChoose");
-      if (!box) { box = document.createElement("div"); box.id = "bkChoose"; box.style.cssText = "display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px"; this.parentNode.parentNode.insertBefore(box, this.parentNode.nextSibling); }
-      if (box.innerHTML && !box.hidden) { box.hidden = true; return; }
+      if (!box) { box = document.createElement("div"); box.id = "bkChoose"; box.style.cssText = "display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px"; }
+      var where = host || ex.parentNode.parentNode, moved = box.parentNode !== where;
+      if (host) host.appendChild(box); else if (moved) ex.parentNode.parentNode.insertBefore(box, ex.parentNode.nextSibling);
+      if (!moved && preset == null && box.innerHTML && !box.hidden) { box.hidden = true; return; }
+      if (preset != null) box.dataset.scope = preset;
+      else if (/^exps:/.test(box.dataset.scope || "")) box.dataset.scope = "";
       var share = canShareFiles(), pre = null, lite = null, bl = null, scope = box.dataset.scope || "";
       // What to include: everything, one cell line, or one experiment (handy for letting someone look at just that).
       var scopeOpts = function () {
         var lines = Object.keys(mem).filter(function (k) { return k.indexOf("lines/") === 0; }).map(function (k) { return mem[k]; }).filter(function (l) { return l && l.name; }).sort(function (a, b) { return (a.order || 0) - (b.order || 0); });
         var exps = Object.keys(mem).filter(function (k) { return k.indexOf("experiments/") === 0; }).map(function (k) { return { id: k.slice(12), d: mem[k] }; });
-        var h = '<option value="">Whole log (every cell line)</option>';
+        var h = (/^exps:/.test(scope) ? '<option value="' + scope + '" selected>Selected experiments (' + scope.slice(5).split(",").length + ")</option>" : "") + '<option value="">Whole log (every cell line)</option>';
         lines.forEach(function (l) {
           h += '<option value="line:' + l.name.replace(/"/g, "&quot;") + '"' + (scope === "line:" + l.name ? " selected" : "") + ">" + l.name + " – all experiments</option>";
           exps.filter(function (x) { return x.d && x.d.line === l.name; }).sort(function (a, b) { return String(a.d.start || "").localeCompare(String(b.d.start || "")) || String(a.d.name || "").localeCompare(String(b.d.name || ""), undefined, { numeric: true }); }).forEach(function (x) {
@@ -996,6 +1010,21 @@ window.CCL_NEW = "Updates page on GitHub listing every update with its date; lin
   .srcflasks, .srcmode { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 4px 0; }
   .srcflask { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; margin: 8px 0; }
   .pfrow select { width: 100%; margin-bottom: 4px; font-size: 12px; }
+  .axctl { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; margin-bottom: 6px; }
+  .axctl label { display: flex; gap: 6px; align-items: center; font-size: 13px; }
+  details.axg { border-bottom: 1px solid var(--line); }
+  details.axg > summary { font-weight: 600; font-size: 15px; padding: 10px 2px; cursor: pointer; list-style: none; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  details.axg > summary::-webkit-details-marker { display: none; }
+  details.axg > summary::before { content: "\25B8"; display: inline-block; width: 14px; transition: transform .15s; }
+  details.axg[open] > summary::before { transform: rotate(90deg); }
+  details.axg > summary .sub { font-weight: 400; }
+  .axrow { display: flex; gap: 10px; align-items: flex-start; padding: 6px 4px 6px 22px; border-top: 1px dashed var(--line); cursor: pointer; }
+  .axrow input { margin-top: 3px; } .axrow .axname { font-weight: 600; } .axall { padding: 4px 4px 6px 22px; font-size: 13px; display: flex; gap: 8px; align-items: center; }
+  .axbar { position: sticky; bottom: 0; background: var(--surface); display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 10px 0 4px; margin-top: 8px; border-top: 1px solid var(--line); }
+  .axdel { margin-top: 10px; padding: 12px; border-radius: 8px; border: 2px solid #c0392b; background: rgba(192,57,43,.08); }
+  #allPanel label.axrow, #allPanel label.axall { display: flex; flex-direction: row; align-items: flex-start; text-align: left; gap: 10px; }
+  #allPanel input[type=checkbox] { width: auto; flex: 0 0 auto; margin: 3px 0 0; }
+  .axdel p { margin: 0 0 8px; } button.danger { color: #fff; background: #c0392b; border-color: #c0392b; }
   .guide details.gsec { border-bottom: 1px solid var(--line); padding: 2px 0; }
   .guide details.gsec > summary { font-weight: 600; font-size: 15px; padding: 10px 2px; cursor: pointer; list-style: none; }
   .guide details.gsec > summary::-webkit-details-marker { display: none; }
@@ -1292,6 +1321,29 @@ window.CCL_NEW = "Updates page on GitHub listing every update with its date; lin
     </div>
   </section>
 
+  <section id="allPanel" class="wrap" style="gap:16px" hidden>
+    <div class="panel">
+      <div class="panel-head"><h2>All experiments</h2><span class="sub">Tick experiments to download, back up or delete several at once.</span></div>
+      <div class="axctl">
+        <label>Order <select id="axSort"><option value="new">Newest first</option><option value="old">Oldest first</option></select></label>
+        <label>From <input type="date" id="axFrom"></label>
+        <label>To <input type="date" id="axTo"></label>
+        <button type="button" class="small" id="axClearDates">Clear dates</button>
+      </div>
+      <div class="sub" id="axFilterNote"></div>
+      <div id="axGroups"></div>
+      <div class="axbar">
+        <span id="axCount"><b>0</b> selected</span>
+        <button type="button" class="small" id="axNone">Clear selection</button>
+        <button type="button" class="primary" id="axDl">Download selected (zip)</button>
+        <button type="button" id="axBk" hidden>Back up selected</button>
+        <button type="button" class="danger" id="axDel">Delete selected…</button>
+      </div>
+      <div id="axBkHost"></div>
+      <div id="axDelBox" class="axdel" hidden></div>
+      <div class="sub" id="axMsg" role="status"></div>
+    </div>
+  </section>
   <section id="guidePanel" class="wrap guide" style="gap:16px" hidden>
     <div class="panel">
       <div class="panel-head"><h2>Guide</h2><span class="sub">Quick reminders. Full guide: <a href="https://github.com/cyychong/cell-log#readme" target="_blank" rel="noopener">GitHub</a></span></div>
@@ -1314,6 +1366,7 @@ window.CCL_NEW = "Updates page on GitHub listing every update with its date; lin
       <details class="gsec"><summary>Other tabs and views</summary>
       <ul><li>Media &amp; lots: batches, lots, bottle photos.</li>
       <li>Protocols: per cell line; edit areas, notes, dated versions.</li>
+      <li>All experiments: grouped by cell line. Tick to download, back up or delete several; filter by date, sort newest or oldest. Delete can't be undone: back up first.</li>
       <li>Log views: Month, Week, Day, Log, Cells/cm² vs confluence.</li></ul>
       </details>
       <details class="gsec"><summary>Which file do I need?</summary>
@@ -1412,17 +1465,12 @@ window.CCL_NEW = "Updates page on GitHub listing every update with its date; lin
     </div>
   </section>
 
-  <details class="panel" id="liveBox">
-    <summary><b>Go live</b><span class="sub">Delete all test entries</span></summary>
-    <p class="sub">Deletes every experiment, every log entry and every media batch, together with their photos. Cell lines and their defaults stay. This cannot be undone, so use Download Excel first if you want a copy.</p>
-    <div class="actions"><input id="liveConfirm" placeholder="Type DELETE to confirm" style="max-width:220px" aria-label="Type DELETE to confirm"><button type="button" id="liveBtn">Delete all test entries</button><span class="sub" id="liveMsg" role="status"></span></div>
-  </details>
 </div>
 
 <script>
 (function () {
-  var MEDIA = "__media", PROTO = "__protocols", GUIDE = "__guide";
-  function isLine(t) { return !!t && t !== MEDIA && t !== PROTO && t !== GUIDE; }
+  var MEDIA = "__media", PROTO = "__protocols", GUIDE = "__guide", ALLX = "__allexp";
+  function isLine(t) { return !!t && t !== MEDIA && t !== PROTO && t !== GUIDE && t !== ALLX; }
   var state = { db: null, assets: null, downloads: null, sample: null, lines: [], entries: [], media: [], tab: null, editing: null, editingMedia: null, pending: [], tplFor: null, openTpl: false, experiments: [], expSel: {}, expReady: false, actions: [], protocols: [], rejected: [], curCustomDef: null, view: "month", weekStart: 1, calDate: null, calFor: null, pEditing: null, pEditFiles: [], pPending: [] };
   var $ = function (id) { return document.getElementById(id); };
 
@@ -2718,6 +2766,7 @@ window.CCL_NEW = "Updates page on GitHub listing every update with its date; lin
     }).join("");
     h += '<button class="tab" role="tab" data-tab="' + MEDIA + '" aria-selected="' + (state.tab === MEDIA) + '">Media &amp; lots</button>';
     h += '<button class="tab" role="tab" data-tab="' + PROTO + '" aria-selected="' + (state.tab === PROTO) + '">Protocols</button>';
+    h += '<button class="tab" role="tab" data-tab="' + ALLX + '" aria-selected="' + (state.tab === ALLX) + '">All experiments</button>';
     if (isWebPage()) h += '<button class="tab" role="tab" data-tab="' + GUIDE + '" aria-selected="' + (state.tab === GUIDE) + '">Guide</button>';
     h += '<button class="small" id="plusLine" aria-label="Add cell line">+ Cell line</button>';
     $("tabs").innerHTML = h;
@@ -3677,7 +3726,7 @@ window.CCL_NEW = "Updates page on GitHub listing every update with its date; lin
     renderTabs();
     try { exportLabel(); } catch (e) {}
     var isMedia = state.tab === MEDIA, isProto = state.tab === PROTO, line = isLine(state.tab);
-    $("linePanel").hidden = !line; $("mediaPanel").hidden = !isMedia; $("protoPanel").hidden = !isProto; $("guidePanel").hidden = state.tab !== GUIDE;
+    $("linePanel").hidden = !line; $("mediaPanel").hidden = !isMedia; $("protoPanel").hidden = !isProto; $("guidePanel").hidden = state.tab !== GUIDE; $("allPanel").hidden = state.tab !== ALLX; if (state.tab === ALLX) renderAllExp();
     if (line) renderProtocolOptions();
     $("noLines").hidden = !(state.linesReady && !state.lines.length);
     if (line) { renderExpBar(); renderEntries(); }
@@ -3710,12 +3759,20 @@ window.CCL_NEW = "Updates page on GitHub listing every update with its date; lin
   // File and folder names: no spaces or odd characters, only letters, digits, dots, hyphens and underscores.
   function safeName(n) { var s = String(n || "file").replace(/\u00b7/g, "-").replace(/[^A-Za-z0-9._-]+/g, "_").replace(/_+/g, "_").replace(/^[_.-]+|[_-]+$/g, "").slice(0, 120); return s || "file"; }
   // What the download covers: the experiment shown on a cell line tab, otherwise the whole log.
+  // On the All experiments tab, the download covers the ticked experiments (state.exportPick).
   function exportScope() {
-    var x = isLine(state.tab) ? curExp() : null;
-    if (x) return { exp: x, entries: state.entries.filter(function (e) { return e.exp === x.id; }), base: safeName(x.line + "_" + (x.name || "Experiment") + "_" + (x.start || "start") + "_to_" + (x.end || "ongoing")) };
+    var xs = state.exportPick ? state.experiments.filter(function (x) { return state.exportPick.indexOf(x.id) >= 0; }) : [];
+    var x = state.exportPick ? (xs.length === 1 ? xs[0] : null) : isLine(state.tab) ? curExp() : null;
+    if (x) xs = [x];
+    if (xs.length) {
+      var ids = {}, lines = [];
+      xs.forEach(function (y) { ids[y.id] = 1; if (lines.indexOf(y.line) < 0) lines.push(y.line); });
+      return { exp: x, exps: xs, ids: ids, shareLine: lines.length === 1 ? lines[0] : null, entries: state.entries.filter(function (e) { return ids[e.exp]; }),
+        base: x ? safeName(x.line + "_" + (x.name || "Experiment") + "_" + (x.start || "start") + "_to_" + (x.end || "ongoing")) : safeName("cell-culture-log_" + xs.length + "-experiments_" + today()) };
+    }
     return { exp: null, entries: state.entries, base: "cell-culture-log_all_" + today() };
   }
-  function exportLabel() { var sc = exportScope(); $("exportBtn").textContent = sc.exp ? "Download " + (sc.exp.name || "experiment") + " to share / Excel (zip)" : "Download log as Excel (zip)"; $("exportHint").hidden = $("exportBtn").hidden || !isWebPage(); }
+  function exportLabel() { $("exportBtn").style.display = state.tab === ALLX ? "none" : ""; var sc = exportScope(); $("exportBtn").textContent = sc.exp ? "Download " + (sc.exp.name || "experiment") + " to share / Excel (zip)" : "Download log as Excel (zip)"; $("exportHint").hidden = $("exportBtn").hidden || state.tab === ALLX || !isWebPage(); }
   // Artifacts may not download files, so photos are copied through an image on the page when a direct download is refused.
   function imgBlob(url) {
     return new Promise(function (res, rej) {
@@ -3776,16 +3833,16 @@ window.CCL_NEW = "Updates page on GitHub listing every update with its date; lin
       var up = window.__localDb && window.__localDb.updatesPack ? await window.__localDb.updatesPack() : null;
       if (up) { zip.file("entries_from_" + safeName(up.from || "me") + ".json", JSON.stringify(up)); shareNote = "entries_from_" + safeName(up.from || "me") + ".json   Your " + up.n + " new or changed item(s) for the person who shared this cell line. Send them this zip."; }
       // The web page can share a cell line too: the zip carries it so someone else can open it with "Open a share file".
-      var wsp = sc.exp ? sharePack(sc.exp.line) : null;
-      if (wsp) { zip.file("share_data.json", JSON.stringify(wsp)); shareNote = (shareNote ? shareNote + "\n" : "") + "share_data.json   Lets someone else keep logging " + sc.exp.line + ": they open this zip on the cell culture log web page (Open a share file), add entries, and send you back their own zip."; }
-    } else if (sc.exp) {
-      var sp = sharePack(sc.exp.line);
-      if (sp) { zip.file("share_data.json", JSON.stringify(sp)); shareNote = "share_data.json   Lets someone without Claude keep logging " + sc.exp.line + ": they open this zip on the cell culture log web page (Open a share file), add entries, and send you back their own zip."; }
+      var wsp = sc.shareLine ? sharePack(sc.shareLine) : null;
+      if (wsp) { zip.file("share_data.json", JSON.stringify(wsp)); shareNote = (shareNote ? shareNote + "\n" : "") + "share_data.json   Lets someone else keep logging " + sc.shareLine + ": they open this zip on the cell culture log web page (Open a share file), add entries, and send you back their own zip."; }
+    } else if (sc.shareLine) {
+      var sp = sharePack(sc.shareLine);
+      if (sp) { zip.file("share_data.json", JSON.stringify(sp)); shareNote = "share_data.json   Lets someone without Claude keep logging " + sc.shareLine + ": they open this zip on the cell culture log web page (Open a share file), add entries, and send you back their own zip."; }
     }
     var jobs = pFileJobs.concat(mJobs, lJobs);
     for (var i = 0; i < jobs.length; i++) { try { zip.file(jobs[i].path, await fetchBlob(jobs[i].url)); } catch (e) { missing.push(jobs[i].path); } }
     zip.file("README.txt", [
-      (sc.exp ? "Cell culture log for " + (sc.exp.line || "") + " " + (sc.exp.name || "") + " (" + (sc.exp.start || "?") + " to " + (sc.exp.end || "ongoing") + "), saved " : "Cell culture log, all experiments, saved ") + iso, "",
+      (sc.exp ? "Cell culture log for " + (sc.exp.line || "") + " " + (sc.exp.name || "") + " (" + (sc.exp.start || "?") + " to " + (sc.exp.end || "ongoing") + "), saved " : sc.exps ? "Cell culture log, " + sc.exps.length + " experiments (" + sc.exps.map(function (y) { return y.line + " " + (y.name || "Experiment") + " " + (y.start || "?") + " to " + (y.end || "ongoing"); }).join("; ") + "), saved " : "Cell culture log, all experiments, saved ") + iso, "",
       base + "_log.xlsx   The log" + (sc.exp ? " for this experiment" : ": one sheet per experiment") + ", plus Experiments and Media & lots.",
       "protocols_used.xlsx   The protocols followed, with their steps, and which entries used them.",
       "media_information.xlsx   Every media batch used: base medium, FBS, supplements, lots and expiry dates.",
@@ -3811,14 +3868,14 @@ window.CCL_NEW = "Updates page on GitHub listing every update with its date; lin
     wx.getRow(1).eachCell(function (c) { c.font = head.font; c.fill = head.fill; });
     var groups = [];
     state.lines.forEach(function (l) {
-      if (sc.exp && l.name !== sc.exp.line) return;
+      if (sc.ids && !lineExps(l.name).some(function (x) { return sc.ids[x.id]; })) return;
       lineExps(l.name).forEach(function (x) {
-        if (sc.exp && x.id !== sc.exp.id) return;
+        if (sc.ids && !sc.ids[x.id]) return;
         var rows = state.entries.filter(function (e) { return e.exp === x.id; });
         groups.push({ name: l.name + " " + (x.name || "Exp"), rows: rows });
         wx.addRow([l.name, x.name || null, x.start || null, x.end || null, x.endReason || null, [x.notes, x.endNotes].filter(Boolean).join(" | ") || null, rows.length, x.frozenDate || null, x.freezeMedia || null, x.frozenBy || null, x.freezeMediaExp || null, x.vialId || null]);
       });
-      var lg = sc.exp ? [] : legacyEntries(l.name);
+      var lg = sc.ids ? [] : legacyEntries(l.name);
       if (lg.length) { groups.push({ name: l.name + " (no experiment)", rows: lg }); wx.addRow([l.name, "(no experiment)", null, null, null, null, lg.length]); }
     });
     groups.forEach(function (g) {
@@ -3852,24 +3909,88 @@ window.CCL_NEW = "Updates page on GitHub listing every update with its date; lin
   }
   $("exportBtn").onclick = exportXlsx;
 
-  // ---------- go live: clear test data ----------
-  $("liveBtn").onclick = async function () {
-    var msg = $("liveMsg");
-    if (!state.db) return;
-    if ($("liveConfirm").value.trim().toUpperCase() !== "DELETE") { msg.textContent = "Type DELETE in the box first."; return; }
-    var ents = state.entries.slice(), meds = state.media.slice(), exps = state.experiments.slice(), ids = {};
-    function grab(u) { var m = String(u || "").match(/[0-9a-f]{32}/i); if (m) ids[m[0].toLowerCase()] = 1; }
-    ents.forEach(function (e) { grab(e.photoUrl); entryPhotos(e).forEach(function (p) { grab(p.url); }); });
-    meds.forEach(function (m) { (Array.isArray(m.photos) ? m.photos : []).forEach(function (p) { grab(p.url); }); });
-    $("liveBtn").disabled = true; msg.textContent = "Deleting...";
-    try {
-      await Promise.all(ents.map(function (e) { return state.db.doc("entries/" + e.id).delete(); }).concat(meds.map(function (m) { return state.db.doc("media/" + m.id).delete(); })).concat(exps.map(function (x) { return state.db.doc("experiments/" + x.id).delete(); })));
-      var gone = 0;
-      if (state.assets) { for (var id in ids) { try { await state.assets.delete(id); gone++; } catch (e) {} } }
-      msg.textContent = "Deleted " + ents.length + " log entries, " + exps.length + " experiments, " + meds.length + " media batches and " + gone + " photos. Ready to go live.";
-      $("liveConfirm").value = "";
-    } catch (e) { msg.textContent = "Could not delete everything: " + (e && e.message ? e.message : "try again"); }
-    $("liveBtn").disabled = false;
+  // ---------- All experiments: grouped by cell line; tick to download, back up or delete several ----------
+  state.axPick = {}; state.axOpen = {};
+  function axEnd(x) { return x.end || today(); }
+  function axShown() {
+    var from = $("axFrom").value, to = $("axTo").value, dir = $("axSort").value === "old" ? 1 : -1;
+    // An experiment is shown when it ran at any time between From and To.
+    return state.experiments.filter(function (x) { return (!from || axEnd(x) >= from) && (!to || (x.start || "") <= to); })
+      .sort(function (a, b) { return dir * ((a.start || "").localeCompare(b.start || "") || (a.createdAt || 0) - (b.createdAt || 0)); });
+  }
+  function axIds() { return Object.keys(state.axPick).filter(function (id) { return state.axPick[id] && state.experiments.some(function (x) { return x.id === id; }); }); }
+  function renderAllExp() {
+    var shown = axShown(), from = $("axFrom").value, to = $("axTo").value, h = "";
+    $("axFilterNote").textContent = from || to ? "Showing experiments that ran between " + (from || "the start") + " and " + (to || "today") + "." : "";
+    var names = [];
+    state.lines.forEach(function (l) { if (names.indexOf(l.name) < 0) names.push(l.name); });
+    shown.forEach(function (x) { if (names.indexOf(x.line) < 0) names.push(x.line); });
+    names.forEach(function (n) {
+      var xs = shown.filter(function (x) { return x.line === n; }), all = state.experiments.filter(function (x) { return x.line === n; }).length;
+      if (!all) return;
+      var picked = xs.filter(function (x) { return state.axPick[x.id]; }).length;
+      h += '<details class="axg" data-line="' + esc(n) + '"' + (state.axOpen[n] ? " open" : "") + "><summary>" + esc(n) + ' <span class="sub">' + (xs.length === all ? all + " experiment" + (all === 1 ? "" : "s") : xs.length + " of " + all + " experiments shown") + (picked ? " \u00b7 " + picked + " selected" : "") + "</span></summary>";
+      if (!xs.length) h += '<div class="axall sub">None in these dates.</div>';
+      else h += '<label class="axall"><input type="checkbox" data-axall="' + esc(n) + '"' + (picked === xs.length ? " checked" : "") + "> Select all shown</label>";
+      xs.forEach(function (x) {
+        var ne = state.entries.filter(function (e) { return e.exp === x.id; }).length;
+        h += '<label class="axrow"><input type="checkbox" data-ax="' + esc(x.id) + '"' + (state.axPick[x.id] ? " checked" : "") + '><span><span class="axname">' + esc(x.name || "Experiment") + '</span><br><span class="sub">' + esc(x.start || "?") + " to " + (x.end ? esc(x.end) : "ongoing") + " \u00b7 " + ne + " entr" + (ne === 1 ? "y" : "ies") + (x.endReason ? " \u00b7 " + esc(x.endReason) : "") + "</span></span></label>";
+      });
+      h += "</details>";
+    });
+    $("axGroups").innerHTML = h || '<p class="sub">No experiments yet.</p>';
+    axBar();
+  }
+  function axBar() {
+    var n = axIds().length;
+    $("axCount").innerHTML = "<b>" + n + "</b> selected";
+    ["axDl", "axBk", "axDel", "axNone"].forEach(function (id) { $(id).disabled = !n; });
+    $("axDl").hidden = !state.downloads; $("axBk").hidden = !(isWebPage() && window.__backupScope);
+    if (!n) $("axDelBox").hidden = true;
+  }
+  $("axGroups").addEventListener("toggle", function (ev) { var d = ev.target; if (d.classList && d.classList.contains("axg")) state.axOpen[d.dataset.line] = d.open; }, true);
+  $("axGroups").addEventListener("change", function (ev) {
+    var t = ev.target;
+    if (t.dataset.ax) state.axPick[t.dataset.ax] = t.checked;
+    else if (t.dataset.axall != null) axShown().filter(function (x) { return x.line === t.dataset.axall; }).forEach(function (x) { state.axPick[x.id] = t.checked; });
+    else return;
+    $("axDelBox").hidden = true; renderAllExp();
+  });
+  ["axSort", "axFrom", "axTo"].forEach(function (id) { $(id).addEventListener("change", renderAllExp); });
+  $("axClearDates").onclick = function () { $("axFrom").value = ""; $("axTo").value = ""; renderAllExp(); };
+  $("axNone").onclick = function () { state.axPick = {}; $("axMsg").textContent = ""; renderAllExp(); };
+  $("axDl").onclick = async function () {
+    var ids = axIds(); if (!ids.length) return;
+    state.exportPick = ids; $("axMsg").textContent = "Making the zip for " + ids.length + " experiment" + (ids.length === 1 ? "" : "s") + "...";
+    try { await exportXlsx(); } finally { state.exportPick = null; }
+    $("axMsg").textContent = "";
+  };
+  $("axBk").onclick = function () { var ids = axIds(); if (ids.length && window.__backupScope) window.__backupScope("exps:" + ids.join(","), $("axBkHost")); };
+  $("axDel").onclick = function () {
+    var ids = axIds(); if (!ids.length) return;
+    var xs = state.experiments.filter(function (x) { return ids.indexOf(x.id) >= 0; }), ne = state.entries.filter(function (e) { return ids.indexOf(e.exp) >= 0; }).length;
+    var box = $("axDelBox");
+    box.innerHTML = "<p><b>\u26a0 Delete " + xs.length + " experiment" + (xs.length === 1 ? "" : "s") + " and their " + ne + " log entr" + (ne === 1 ? "y" : "ies") + ", with their photos?</b></p>" +
+      "<ul style=\"margin:0 0 8px;padding-left:20px\">" + xs.map(function (x) { return "<li>" + esc(x.line) + " \u00b7 " + esc(x.name || "Experiment") + " (" + esc(x.start || "?") + " to " + (x.end ? esc(x.end) : "ongoing") + ")</li>"; }).join("") + "</ul>" +
+      "<p><b>This cannot be undone.</b> Make sure you have backed them up first" + (isWebPage() ? " (Back up selected, or Download selected)" : " (Download selected)") + ". Cell lines, media batches and protocols are kept.</p>" +
+      '<div class="actions"><input id="axDelType" placeholder="Type DELETE to confirm" style="max-width:220px" aria-label="Type DELETE to confirm"><button type="button" class="danger" id="axDelGo">Delete permanently</button><button type="button" class="small" id="axDelNo">Cancel</button></div>';
+    box.hidden = false; $("axDelType").focus();
+    $("axDelNo").onclick = function () { box.hidden = true; };
+    $("axDelGo").onclick = async function () {
+      if ($("axDelType").value.trim().toUpperCase() !== "DELETE") { $("axMsg").textContent = "Type DELETE in the box first."; return; }
+      var ents = state.entries.filter(function (e) { return ids.indexOf(e.exp) >= 0; }), pids = {};
+      function grab(u) { var m = String(u || "").match(/[0-9a-f]{32}/i); if (m) pids[m[0].toLowerCase()] = 1; }
+      ents.forEach(function (e) { grab(e.photoUrl); entryPhotos(e).forEach(function (p) { grab(p.url); }); });
+      this.disabled = true; $("axMsg").textContent = "Deleting...";
+      try {
+        await Promise.all(ents.map(function (e) { return state.db.doc("entries/" + e.id).delete(); }).concat(ids.map(function (id) { return state.db.doc("experiments/" + id).delete(); })));
+        var gone = 0; if (state.assets) { for (var k in pids) { try { await state.assets.delete(k); gone++; } catch (e) {} } }
+        ids.forEach(function (id) { delete state.axPick[id]; state.expSel && Object.keys(state.expSel).forEach(function (l) { if (state.expSel[l] === id) delete state.expSel[l]; }); });
+        box.hidden = true;
+        $("axMsg").textContent = "Deleted " + ids.length + " experiment" + (ids.length === 1 ? "" : "s") + ", " + ents.length + " log entr" + (ents.length === 1 ? "y" : "ies") + " and " + gone + " photo" + (gone === 1 ? "" : "s") + ".";
+      } catch (e) { $("axMsg").textContent = "Could not delete everything: " + (e && e.message ? e.message : "try again"); this.disabled = false; }
+      renderAllExp();
+    };
   };
 
   // ---------- start ----------
@@ -3900,7 +4021,7 @@ window.CCL_NEW = "Updates page on GitHub listing every update with its date; lin
       var names = state.lines.map(function (l) { return l.name; });
       state.linesReady = true;
       if (!state.tab || (isLine(state.tab) && names.indexOf(state.tab) < 0)) {
-        state.tab = (saved === MEDIA || saved === PROTO || saved === GUIDE || names.indexOf(saved) >= 0) ? saved : (names[0] || MEDIA);
+        state.tab = (saved === MEDIA || saved === PROTO || saved === GUIDE || saved === ALLX || names.indexOf(saved) >= 0) ? saved : (names[0] || MEDIA);
       }
       renderAll(); if (!state.editing) { var t = $("formLine"); t.textContent = isLine(state.tab) ? state.tab : ""; }
       done("lines");
@@ -3909,6 +4030,7 @@ window.CCL_NEW = "Updates page on GitHub listing every update with its date; lin
       state.entries = s.docs.map(function (d) { var o = Object.assign({}, d.data(), { id: d.id }); if (o.action === "Split") o.action = "Passage"; return o; }); // older entries said Split
       if (REV) renderReview();
       if (isLine(state.tab)) { renderExpBar(); renderEntries(); }
+      if (state.tab === ALLX) renderAllExp();
       if (isLine(state.tab) && !state.editing && $("f_action").value !== "Thaw" && (!$("f_passage").value.trim() || $("f_passage").value.trim() === state.passAuto)) try { autoPassage(); } catch (e) {}
       if (isLine(state.tab) && !state.editing) try { setupMedFlasks(); if (!state.src.rows.length) setupSources(); } catch (e) {}
       done("entries");
@@ -3917,6 +4039,7 @@ window.CCL_NEW = "Updates page on GitHub listing every update with its date; lin
       state.experiments = s.docs.map(function (d) { return Object.assign({}, d.data(), { id: d.id }); });
       state.expReady = true;
       if (isLine(state.tab)) { renderExpBar(); renderEntries(); }
+      if (state.tab === ALLX) renderAllExp();
       done("experiments");
     }, onErr);
     state.db.collection("actions").onSnapshot(function (s) {

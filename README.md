@@ -54,6 +54,17 @@ Under **Counts and seeding**, each flask you added gets its own row, so two T25s
 
 On the **Media** tab, press **Add bottle photo** to take or choose photos of the bottle. They are saved with that batch and named after its batch ID: `M-1104.jpg`, then `M-1104_2.jpg` and so on. **Remove** takes a photo off before you save. The photos are in **Export backup** and in the log zip (folder `media_photos`).
 
+## All experiments
+
+The **All experiments** tab lists every experiment, grouped by cell line. Each cell line's header shows how many experiments it has; tap it to see them, each with its start and end date.
+
+- **Order:** newest first or oldest first.
+- **From / To:** show only experiments that ran between those dates. **Clear dates** shows them all again.
+- **Tick** experiments (or **Select all shown** for a cell line), then:
+  - **Download selected (zip):** the Excel log, protocols and media information for just those experiments.
+  - **Back up selected:** a backup file with just those experiments (web page only). Good for letting someone look at them with **Open a shared log**; don't use it to restore your own log.
+  - **Delete selected…:** deletes those experiments and their log entries and photos. Cell lines, media batches and protocols are kept. **This cannot be undone**, so back them up first. You type DELETE to confirm.
+
 ## Notes on each entry
 
 Every entry has a **Notes** box near the top. Use it while you work for anything that went wrong or that you tried differently. Tick **Flag this entry** to make it stand out: flagged entries are marked ⚠ in the log, the calendar and the Excel file.
@@ -149,6 +160,7 @@ If you opened a share file from the lab, this zip also carries your new entries 
 | Move my log to a new phone or computer | **Export backup**, whole log | **Restore a backup** on the new device (replaces its log) |
 | Let someone look at my log, a cell line or one experiment | **Export backup**, pick what to include | **Open a shared log (view only)** |
 | Work on a cell line together | **Download (zip)** at the top, on that experiment's tab | **Open a share file**, add entries, send their own zip back |
+| Download, back up or delete several experiments at once | **All experiments** tab: tick them | |
 | Get spreadsheets of my entries | **Download (zip)**: Excel files inside | Open the .xlsx files |
 
 The app has a **Guide** tab with a short version of this page.

@@ -6,6 +6,7 @@ Every change to the [cell culture log](https://cyychong.github.io/cell-log/), ne
 
 ## 2026-11-23
 
+- 15:19 · All experiments tab: tick experiments to download, back up or delete several at once; filter by date and sort. The Go live box is removed.
 - 15:11 · Updates page on GitHub listing every update with its date; linked from the Guide.
 
 ## 2026-11-21
